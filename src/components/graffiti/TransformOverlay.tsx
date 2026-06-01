@@ -48,10 +48,25 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
   });
 
   const [localText, setLocalText] = useState(() => item.kind === 'text' ? item.content : '');
+  const ghostRef = useRef<HTMLSpanElement>(null);
 
   const dragRef = useRef<DragOp | null>(null);
+  const tfWRef = useRef(tf.w); // tf.w 최신값을 stale closure 없이 참조
+  tfWRef.current = tf.w;
   const onCancelRef = useRef(onCancel);
   onCancelRef.current = onCancel;
+
+  // 텍스트 변경 시 ghost span 너비를 읽어 tf.w 동기화
+  // initSizeRef.w도 같이 rebase해서 textFontSize(= item.fontSize * tf.w/initW)가 유지됨
+  useEffect(() => {
+    if (item.kind !== 'text' || !ghostRef.current) return;
+    const newW = Math.max(ghostRef.current.offsetWidth, MIN_W);
+    if (initSizeRef.current) {
+      initSizeRef.current.w = initSizeRef.current.w * newW / tfWRef.current;
+    }
+    setTf(prev => ({ ...prev, w: newW }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localText]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -179,7 +194,7 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
               style={{ display: 'grid', pointerEvents: 'auto' }}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <span style={{
+              <span ref={ghostRef} style={{
                 gridArea: '1/1', visibility: 'hidden', whiteSpace: 'pre',
                 fontSize: textFontSize, fontFamily: item.fontFamily, fontWeight: 'bold',
                 padding: '0 4px', minWidth: '2ch',
