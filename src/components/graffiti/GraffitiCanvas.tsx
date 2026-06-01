@@ -165,15 +165,6 @@ export function GraffitiCanvas() {
 
   const ctx = useCallback(() => canvasRef.current?.getContext('2d') ?? null, []);
 
-  function toLogical(e: React.PointerEvent): { x: number; y: number } {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * LOGICAL_W,
-      y: ((e.clientY - rect.top) / rect.height) * LOGICAL_H,
-    };
-  }
-
   // 초기 로딩
   useEffect(() => {
     async function load() {
