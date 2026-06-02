@@ -263,7 +263,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
             role="checkbox"
             aria-checked={includeBackground}
             onClick={() => setIncludeBackground((v) => !v)}
-            className="absolute left-5 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors"
+            className="absolute left-5 z-10 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors"
           >
             <span
               className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
@@ -281,7 +281,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
           <button
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="absolute right-5 flex items-center gap-1.5 h-[40px] px-5 rounded-lg bg-black text-white font-medium text-sm hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute right-5 z-10 flex items-center gap-1.5 h-[40px] px-5 rounded-lg bg-black text-white font-medium text-sm hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             완료
           </button>
