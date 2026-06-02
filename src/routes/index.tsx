@@ -6,6 +6,7 @@ import { GalleryBoard } from '@/components/gallery/GalleryBoard';
 import { CanvasModal } from '@/components/gallery/CanvasModal';
 import { LikesDrawer } from '@/components/gallery/LikesDrawer';
 import { CardViewer } from '@/components/gallery/CardViewer';
+import { LiveSpectator } from '@/components/gallery/LiveSpectator';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import { supabase, type Drawing } from '@/lib/supabase';
 
@@ -18,6 +19,7 @@ function GalleryBoardPage() {
   const [extraDrawings, setExtraDrawings] = useState<Drawing[]>([]);
   const [isLikesOpen, setIsLikesOpen] = useState(false);
   const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
+  const [isSpectatorOpen, setIsSpectatorOpen] = useState(false);
   const [presenceCount, setPresenceCount] = useState(1);
   const [drawingCount, setDrawingCount] = useState(0);
   const [drawingNowCount, setDrawingNowCount] = useState(0);
@@ -111,13 +113,16 @@ function GalleryBoardPage() {
 
       {/* 그림 그리는 중 표시 */}
       {drawingNowCount > 0 && (
-        <div className="fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1a1a1a] select-none pointer-events-none">
+        <button
+          onClick={() => setIsSpectatorOpen(true)}
+          className="fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1a1a1a] select-none cursor-pointer hover:underline underline-offset-4"
+        >
           <span className="relative flex w-2 h-2">
             <span className="absolute inline-flex w-full h-full rounded-full bg-green-500 opacity-60 animate-ping" />
             <span className="relative inline-flex w-2 h-2 rounded-full bg-green-500" />
           </span>
           {drawingNowCount}명이 그림을 그리는 중...
-        </div>
+        </button>
       )}
 
       {/* + 그림 추가 버튼 */}
@@ -172,6 +177,11 @@ function GalleryBoardPage() {
         isOpen={isCanvasOpen}
         onClose={() => setIsCanvasOpen(false)}
         onDrawingAdded={handleDrawingAdded}
+      />
+
+      <LiveSpectator
+        isOpen={isSpectatorOpen}
+        onClose={() => setIsSpectatorOpen(false)}
       />
 
       <Toaster position="top-center" richColors />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, type Drawing } from '@/lib/supabase';
 import { fetchDrawings } from '@/lib/api/drawings';
@@ -36,6 +37,7 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
+  const [scale, setScale] = useState(1);
 
   const userId = useRef(crypto.randomUUID());
   const userColor = useRef(CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)]);
@@ -232,6 +234,17 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
   const panLimitX = BOARD_W > viewport.w ? (BOARD_W - viewport.w) / 2 : EDGE_MARGIN;
   const panLimitY = BOARD_H > viewport.h ? (BOARD_H - viewport.h) / 2 : EDGE_MARGIN;
 
+  // 전체보기: 월드 전체가 화면에 들어오도록 축소
+  const fitScale = Math.min(
+    viewport.w / (BOARD_W + EDGE_MARGIN * 2),
+    viewport.h / (BOARD_H + EDGE_MARGIN * 2),
+    1
+  );
+  function toggleFit() {
+    setPan({ x: 0, y: 0 });
+    setScale((s) => (s === 1 ? fitScale : 1));
+  }
+
   function rubberBand(value: number, limit: number) {
     if (Math.abs(value) <= limit) return value;
     const excess = Math.abs(value) - limit;
@@ -312,7 +325,7 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
           top: offsetY,
           width: BOARD_W,
           height: BOARD_H,
-          transform: `translate(${pan.x}px, ${pan.y}px)`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
           transition: isPanning ? 'none' : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         }}
       >
@@ -335,7 +348,7 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px)`,
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
           transition: isPanning ? 'none' : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         }}
       >
@@ -345,6 +358,17 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
           )
         ))}
       </div>
+
+      {/* 전체보기 토글 (그림 추가 버튼과 같은 높이, 우측) */}
+      <button
+        onClick={toggleFit}
+        onPointerDown={(e) => e.stopPropagation()}
+        aria-label={scale === 1 ? '전체보기' : '원래대로'}
+        title={scale === 1 ? '전체보기' : '원래대로'}
+        className="fixed bottom-[62px] right-4 z-40 w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#1a1a1a] select-none shadow-sm border border-black/8 hover:bg-gray-50 transition-colors"
+      >
+        {scale === 1 ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+      </button>
 
       {/* 카드 뷰어 모달 */}
       {viewerDrawing && (

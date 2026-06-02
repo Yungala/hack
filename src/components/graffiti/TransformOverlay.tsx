@@ -49,6 +49,9 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
 
   const [localText, setLocalText] = useState(() => item.kind === 'text' ? item.content : '');
   const ghostRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const composingRef = useRef(false);
+  const pendingEnterRef = useRef(false);
 
   const dragRef = useRef<DragOp | null>(null);
   const tfWRef = useRef(tf.w);
@@ -124,7 +127,9 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
   }
 
   function handleConfirm() {
-    if (item.kind === 'text' && !localText.trim()) { onCancel(); return; }
+    // 조합 중 들어온 마지막 글자까지 반영되도록 DOM 값을 우선 사용
+    const text = item.kind === 'text' ? (inputRef.current?.value ?? localText) : '';
+    if (item.kind === 'text' && !text.trim()) { onCancel(); return; }
     const rotRad = tf.rot * Math.PI / 180;
     const ac = Math.abs(Math.cos(rotRad));
     const as = Math.abs(Math.sin(rotRad));
@@ -161,7 +166,7 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
       c.font = `bold ${fontSize}px ${item.fontFamily}`;
       c.textBaseline = 'middle';
       c.textAlign = 'center';
-      c.fillText(localText, 0, 0);
+      c.fillText(text, 0, 0);
       finalize();
     }
   }
@@ -247,12 +252,24 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
                 {localText + ''}
               </span>
               <input
+                ref={inputRef}
                 autoFocus
                 value={localText}
                 onChange={(e) => setLocalText(e.target.value)}
                 onPointerDown={(e) => e.stopPropagation()}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={() => {
+                  composingRef.current = false;
+                  if (pendingEnterRef.current) { pendingEnterRef.current = false; handleConfirm(); }
+                }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); handleConfirm(); }
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  if (e.nativeEvent.isComposing || composingRef.current) {
+                    pendingEnterRef.current = true;
+                  } else {
+                    handleConfirm();
+                  }
                 }}
                 style={{
                   gridArea: '1/1', background: 'transparent', border: 'none', outline: 'none',

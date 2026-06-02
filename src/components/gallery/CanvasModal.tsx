@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadDrawingImage, insertDrawing } from '@/lib/api/drawings';
-import type { Drawing } from '@/lib/supabase';
+import { supabase, type Drawing } from '@/lib/supabase';
 import { LocalCanvas, type LocalCanvasHandle } from './LocalCanvas';
 import { DrawingToolbar } from '@/components/graffiti/DrawingToolbar';
 import { env } from '@/env';
@@ -24,6 +24,52 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
   const [evalState, setEvalState] = useState<EvalState>({ status: 'idle' });
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [includeBackground, setIncludeBackground] = useState(true);
+
+  const sessionId = useRef('');
+  const liveChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // 실시간 관전용 broadcast 채널
+  useEffect(() => {
+    if (!isOpen) return;
+    const sid = crypto.randomUUID();
+    sessionId.current = sid;
+    const channel = supabase.channel('gallery-live-draw', {
+      config: { broadcast: { self: false } },
+    });
+    channel
+      .on('broadcast', { event: 'sync-req' }, () => {
+        const state = canvasRef.current?.getState();
+        channel.send({
+          type: 'broadcast',
+          event: 'sync-state',
+          payload: { sid, strokes: state?.strokes ?? [], images: state?.images ?? [] },
+        });
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          channel.send({ type: 'broadcast', event: 'begin', payload: { sid } });
+        }
+      });
+    liveChannelRef.current = channel;
+    return () => {
+      channel.send({ type: 'broadcast', event: 'end', payload: { sid } });
+      supabase.removeChannel(channel);
+      liveChannelRef.current = null;
+    };
+  }, [isOpen]);
+
+  const live = useMemo(
+    () => ({
+      emit: (event: string, payload: Record<string, unknown>) => {
+        liveChannelRef.current?.send({
+          type: 'broadcast',
+          event,
+          payload: { ...payload, sid: sessionId.current },
+        });
+      },
+    }),
+    []
+  );
 
   const handleClose = useCallback(() => {
     canvasRef.current?.clear();
@@ -53,6 +99,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
     if (isOpen) {
       canvasRef.current?.clear();
       setEvalState({ status: 'idle' });
+      setIncludeBackground(true);
     }
   }, [isOpen]);
 
@@ -198,6 +245,8 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
         <div className="flex-1 overflow-auto flex items-center justify-center p-4 min-h-0 bg-[#f0f2f5]">
           <LocalCanvas
             ref={canvasRef}
+            live={live}
+            includeBackground={includeBackground}
             className="max-w-full max-h-full object-contain border border-[#34485b]/30 rounded-lg shadow-sm"
             style={
               isMobile
@@ -209,15 +258,22 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
 
         {/* 푸터 */}
         <div className="shrink-0 relative flex items-center justify-center px-5 py-3 border-t border-[#34485b]/20">
-          <label className="absolute left-5 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors">
-            <input
-              type="checkbox"
-              checked={includeBackground}
-              onChange={(e) => setIncludeBackground(e.target.checked)}
-              className="w-4 h-4 accent-[#34485b] cursor-pointer"
-            />
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={includeBackground}
+            onClick={() => setIncludeBackground((v) => !v)}
+            className="absolute left-5 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors"
+          >
+            <span
+              className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
+                includeBackground ? 'bg-[#34485b] border-[#34485b]' : 'bg-white border-[#34485b]/40'
+              }`}
+            >
+              {includeBackground && <Check size={12} className="text-white" strokeWidth={3} />}
+            </span>
             배경 포함
-          </label>
+          </button>
           <DrawingToolbar
             variant="modal"
             onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}

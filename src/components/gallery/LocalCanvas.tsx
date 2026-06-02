@@ -41,11 +41,18 @@ export interface LocalCanvasHandle {
   clear: () => void;
   handleImageFile: (file: File) => void;
   isEmpty: () => boolean;
+  getState: () => { strokes: LocalStroke[]; images: PlacedImage[] };
+}
+
+export interface LiveDrawApi {
+  emit: (event: string, payload: Record<string, unknown>) => void;
 }
 
 export interface LocalCanvasProps {
   className?: string;
   style?: React.CSSProperties;
+  live?: LiveDrawApi;
+  includeBackground?: boolean;
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: LocalStroke) {
@@ -79,17 +86,26 @@ async function preloadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+function paintBg(ctx: CanvasRenderingContext2D, includeBackground: boolean) {
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  if (includeBackground) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  } else {
+    ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+  }
+  ctx.restore();
+}
+
 function redraw(
   ctx: CanvasRenderingContext2D,
   strokes: LocalStroke[],
   images: PlacedImage[],
   imageEls: Map<string, HTMLImageElement>,
+  includeBackground: boolean,
 ) {
-  ctx.save();
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-  ctx.restore();
+  paintBg(ctx, includeBackground);
 
   // Draw all placed images first
   for (const img of images) {
@@ -106,14 +122,19 @@ function redraw(
 }
 
 export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
-  function LocalCanvas({ className, style }, ref) {
+  function LocalCanvas({ className, style, live, includeBackground = true }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const bgRef = useRef(includeBackground);
+    bgRef.current = includeBackground;
     const { color, thickness, tool, fontFamily, clearTool } = useDrawingStore();
 
     const strokesRef = useRef<LocalStroke[]>([]);
     const currentStrokeRef = useRef<LocalStroke | null>(null);
     const imagesRef = useRef<PlacedImage[]>([]);
     const imageElsRef = useRef<Map<string, HTMLImageElement>>(new Map());
+    const lastLiveMove = useRef(0);
+    const liveRef = useRef(live);
+    liveRef.current = live;
 
     const [transformPending, setTransformPending] = useState<{
       item: TransformItem;
@@ -147,9 +168,15 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
     useEffect(() => {
       const c = getCtx();
       if (!c) return;
-      c.fillStyle = '#ffffff';
-      c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+      paintBg(c, bgRef.current);
     }, [getCtx]);
+
+    // 배경 포함 토글 시 캔버스 즉시 갱신 (편집 중 시각 피드백)
+    useEffect(() => {
+      const c = getCtx();
+      if (!c) return;
+      redraw(c, strokesRef.current, imagesRef.current, imageElsRef.current, includeBackground);
+    }, [includeBackground, getCtx]);
 
     function cssToLogical(cssX: number, cssY: number): Point {
       const rect = canvasRef.current?.getBoundingClientRect();
@@ -190,6 +217,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
         thickness,
         eraser: isEraser,
       };
+      liveRef.current?.emit('stroke-start', { color, thickness, eraser: isEraser, point: pt });
       (e.target as HTMLElement).setPointerCapture(e.pointerId);
     }
 
@@ -197,6 +225,12 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
       if (!currentStrokeRef.current) return;
       const pt = cssToLogical(e.clientX, e.clientY);
       currentStrokeRef.current.points.push(pt);
+
+      const now = Date.now();
+      if (liveRef.current && now - lastLiveMove.current > 30) {
+        lastLiveMove.current = now;
+        liveRef.current.emit('stroke-move', { point: pt });
+      }
 
       // Incremental draw for current stroke
       const c = getCtx();
@@ -228,6 +262,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
 
     function handlePointerUp() {
       if (!currentStrokeRef.current) return;
+      liveRef.current?.emit('stroke-end', { points: currentStrokeRef.current.points });
       if (currentStrokeRef.current.points.length >= 2) {
         strokesRef.current.push(currentStrokeRef.current);
       }
@@ -266,10 +301,11 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
 
       imageElsRef.current.set(id, stableEl);
       imagesRef.current.push({ id, dataUrl: stableDataUrl, x: logX, y: logY, width: logW, height: logH });
+      liveRef.current?.emit('image', { id, dataUrl: stableDataUrl, x: logX, y: logY, width: logW, height: logH });
 
       const c = getCtx();
       if (c) {
-        redraw(c, strokesRef.current, imagesRef.current, imageElsRef.current);
+        redraw(c, strokesRef.current, imagesRef.current, imageElsRef.current, bgRef.current);
       }
     }
 
@@ -346,13 +382,16 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
         imagesRef.current = [];
         imageElsRef.current.clear();
         const c = getCtx();
-        if (c) {
-          c.fillStyle = '#ffffff';
-          c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
-        }
+        if (c) paintBg(c, bgRef.current);
+        liveRef.current?.emit('clear', {});
       },
       isEmpty() {
         return strokesRef.current.length === 0 && imagesRef.current.length === 0;
+      },
+      getState() {
+        const strokes = [...strokesRef.current];
+        if (currentStrokeRef.current) strokes.push(currentStrokeRef.current);
+        return { strokes, images: imagesRef.current.map((i) => ({ ...i })) };
       },
       handleImageFile(file: File) {
         const reader = new FileReader();
@@ -391,7 +430,15 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
           style={{
             cursor: cursorStyle,
             touchAction: 'none',
-            backgroundColor: '#ffffff',
+            ...(includeBackground
+              ? { backgroundColor: '#ffffff' }
+              : {
+                  backgroundColor: '#ffffff',
+                  backgroundImage:
+                    'linear-gradient(45deg,#d4d4d4 25%,transparent 25%),linear-gradient(-45deg,#d4d4d4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#d4d4d4 75%),linear-gradient(-45deg,transparent 75%,#d4d4d4 75%)',
+                  backgroundSize: '16px 16px',
+                  backgroundPosition: '0 0,0 8px,8px -8px,-8px 0',
+                }),
             ...style,
           }}
           onPointerDown={handlePointerDown}
