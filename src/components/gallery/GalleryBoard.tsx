@@ -143,6 +143,7 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
 
   function handleBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if ((e.target as HTMLElement).closest('[data-card]')) return;
+    if ((e.target as HTMLElement).closest('[data-modal]')) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     panStart.current = { px: e.clientX, py: e.clientY, ox: pan.x, oy: pan.y };
   }
