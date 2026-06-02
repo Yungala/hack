@@ -68,22 +68,22 @@ export function CardViewer({ drawing, onClose, onLiked }: CardViewerProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 overflow-hidden flex"
-        style={{ maxWidth: 900, width: '90vw', maxHeight: '85vh' }}
+        className="bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 overflow-hidden flex flex-col md:flex-row"
+        style={{ maxWidth: 900, width: '92vw', maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
         {/* 이미지 */}
-        <div className="flex-1 bg-[#f0f2f5] flex items-center justify-center min-w-0">
+        <div className="flex-1 bg-[#f0f2f5] flex items-center justify-center min-w-0 min-h-0" style={{ minHeight: '40vw' }}>
           <img
             src={drawing.image_url}
             alt="갤러리 그림"
             className="block max-w-full max-h-full object-contain"
-            style={{ maxHeight: '85vh' }}
+            style={{ maxHeight: '50vh' }}
           />
         </div>
 
         {/* 사이드 패널 */}
-        <div className="w-72 shrink-0 flex flex-col border-l border-[#34485b]/10">
+        <div className="md:w-72 shrink-0 flex flex-col border-t md:border-t-0 md:border-l border-[#34485b]/10" style={{ maxHeight: '40vh' }}>
           {/* 헤더 */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-[#34485b]/10">
             <span className="text-sm text-[#34485b]/60">{formatTime(drawing.created_at)}</span>
