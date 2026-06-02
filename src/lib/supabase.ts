@@ -56,3 +56,17 @@ export interface GraffitiTextInsert {
   font_size: number;
   font_family: string;
 }
+
+export interface Drawing {
+  id: string;
+  image_url: string;
+  x: number;
+  y: number;
+  created_at: string;
+}
+
+export interface DrawingInsert {
+  image_url: string;
+  x: number;
+  y: number;
+}
