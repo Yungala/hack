@@ -12,11 +12,13 @@ const COLOR_NAMES: Record<string, string> = {
 const SIZE_LABELS: Record<Thickness, string> = { 2: 'S', 6: 'M', 14: 'L' };
 
 interface DrawingToolbarProps {
-  onImageSelected: (file: File) => void;
+  onImageSelected?: (file: File) => void;
+  variant?: 'floating' | 'modal';
 }
 
-export function DrawingToolbar({ onImageSelected }: DrawingToolbarProps) {
+export function DrawingToolbar({ onImageSelected, variant = 'floating' }: DrawingToolbarProps) {
   const { tool, color, thickness, fontFamily, isUploadMode, setTool, setColor, setThickness, setFontFamily } = useDrawingStore();
+  const isModal = variant === 'modal';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDrawModalOpen, setIsDrawModalOpen] = useState(false);
 
@@ -27,7 +29,7 @@ export function DrawingToolbar({ onImageSelected }: DrawingToolbarProps) {
       alert('파일 크기는 5MB 이하만 가능합니다.');
       return;
     }
-    onImageSelected(file);
+    onImageSelected?.(file);
     e.target.value = '';
   }
 
@@ -35,7 +37,10 @@ export function DrawingToolbar({ onImageSelected }: DrawingToolbarProps) {
     <>
       {/* 텍스트 모드 옵션 패널 */}
       {tool === 'text' && (
-        <div className="fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 z-40 flex flex-col gap-2 bg-black/70 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl">
+        <div className={isModal
+          ? "flex flex-col gap-2 bg-black/70 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl"
+          : "fixed bottom-[4.5rem] left-1/2 -translate-x-1/2 z-40 flex flex-col gap-2 bg-black/70 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-xl"
+        }>
           {/* 색상 */}
           <div className="flex items-center gap-1.5">
             {PALETTE.map((c) => (
@@ -96,18 +101,24 @@ export function DrawingToolbar({ onImageSelected }: DrawingToolbarProps) {
       )}
 
       {/* 메인 툴바 */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-black/70 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-xl">
-        {/* 그리기 */}
-        <button
-          aria-label="그리기"
-          title="그리기"
-          onClick={() => setIsDrawModalOpen(true)}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-colors"
-        >
-          <Pencil size={16} />
-        </button>
-
-        <div className="w-px h-6 bg-white/20" />
+      <div className={isModal
+        ? "flex items-center gap-3 bg-black/70 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-xl"
+        : "fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-black/70 backdrop-blur-sm rounded-2xl px-5 py-3 shadow-xl"
+      }>
+        {/* 그리기 버튼 — floating 모드에서만 표시 */}
+        {!isModal && (
+          <>
+            <button
+              aria-label="그리기"
+              title="그리기"
+              onClick={() => setIsDrawModalOpen(true)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            >
+              <Pencil size={16} />
+            </button>
+            <div className="w-px h-6 bg-white/20" />
+          </>
+        )}
 
         {/* 텍스트 도구 */}
         <button
@@ -146,7 +157,7 @@ export function DrawingToolbar({ onImageSelected }: DrawingToolbarProps) {
       <DrawingModal
         isOpen={isDrawModalOpen}
         onClose={() => setIsDrawModalOpen(false)}
-        onConfirm={(file) => onImageSelected(file)}
+        onConfirm={(file) => onImageSelected?.(file)}
       />
     </>
   );
