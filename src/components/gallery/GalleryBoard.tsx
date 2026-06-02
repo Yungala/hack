@@ -132,10 +132,6 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
     });
   }
 
-  function handleMouseMove(e: React.MouseEvent) {
-    broadcastCursor(e.clientX, e.clientY, currentDraggingId.current);
-  }
-
   function handleDragStart(cardId: string) {
     currentDraggingId.current = cardId;
   }
