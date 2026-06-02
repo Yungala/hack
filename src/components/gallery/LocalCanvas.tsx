@@ -171,7 +171,8 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
         return;
       }
 
-      // brush or eraser
+      // brush or eraser only
+      if (tool !== 'brush' && tool !== 'eraser') return;
       const pt = cssToLogical(e.clientX, e.clientY);
       const isEraser = tool === 'eraser';
       currentStrokeRef.current = {

@@ -94,6 +94,52 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isSubmitting = evalState.status === 'evaluating';
 
+  // 평가 결과 모달
+  if (evalState.status === 'evaluating') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 flex flex-col items-center gap-4 px-10 py-10">
+          <div className="w-10 h-10 border-[3px] border-[#34485b]/20 border-t-[#34485b] rounded-full animate-spin" />
+          <p className="text-[#34485b] text-sm font-medium">그림을 감상하는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (evalState.status === 'approved') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 flex flex-col items-center gap-5 px-10 py-10 max-w-sm text-center">
+          <div className="text-5xl">🎨</div>
+          <p className="text-[#34485b] text-base font-medium">{evalState.comment}</p>
+          <button
+            onClick={handleClose}
+            className="px-6 py-2 rounded-lg bg-[#34485b] text-white text-sm font-medium hover:bg-[#34485b]/80 transition-colors"
+          >
+            갤러리로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (evalState.status === 'rejected') {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 flex flex-col items-center gap-5 px-10 py-10 max-w-sm text-center">
+          <div className="text-5xl">🚫</div>
+          <p className="text-[#34485b] text-base font-medium">{evalState.comment}</p>
+          <button
+            onClick={() => setEvalState({ status: 'idle' })}
+            className="px-6 py-2 rounded-lg bg-[#34485b] text-white text-sm font-medium hover:bg-[#34485b]/80 transition-colors"
+          >
+            다시 그리기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div
@@ -117,7 +163,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
         </div>
 
         {/* 캔버스 영역 */}
-        <div className="flex-1 overflow-auto flex items-center justify-center p-4 min-h-0 bg-[#f0f2f5] relative">
+        <div className="flex-1 overflow-auto flex items-center justify-center p-4 min-h-0 bg-[#f0f2f5]">
           <LocalCanvas
             ref={canvasRef}
             className="max-w-full max-h-full object-contain border border-[#34485b]/30 rounded-lg shadow-sm"
@@ -127,42 +173,6 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
                 : { width: '100%', aspectRatio: '16/9' }
             }
           />
-
-          {/* 평가 오버레이 */}
-          {evalState.status === 'evaluating' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg gap-3">
-              <div className="w-8 h-8 border-3 border-[#34485b]/30 border-t-[#34485b] rounded-full animate-spin" />
-              <p className="text-[#34485b] text-sm font-medium">그림을 감상하는 중...</p>
-            </div>
-          )}
-
-          {/* 승인 결과 오버레이 */}
-          {evalState.status === 'approved' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm rounded-lg gap-4 px-6">
-              <div className="text-4xl">🎨</div>
-              <p className="text-[#34485b] text-base font-medium text-center">{evalState.comment}</p>
-              <button
-                onClick={handleClose}
-                className="px-5 py-2 rounded-lg bg-[#34485b] text-white text-sm font-medium hover:bg-[#34485b]/80 transition-colors"
-              >
-                갤러리로 이동
-              </button>
-            </div>
-          )}
-
-          {/* 반려 결과 오버레이 */}
-          {evalState.status === 'rejected' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm rounded-lg gap-4 px-6">
-              <div className="text-4xl">🚫</div>
-              <p className="text-[#34485b] text-base font-medium text-center">{evalState.comment}</p>
-              <button
-                onClick={() => setEvalState({ status: 'idle' })}
-                className="px-5 py-2 rounded-lg bg-[#34485b] text-white text-sm font-medium hover:bg-[#34485b]/80 transition-colors"
-              >
-                다시 그리기
-              </button>
-            </div>
-          )}
         </div>
 
         {/* 푸터 */}

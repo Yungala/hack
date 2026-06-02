@@ -56,11 +56,14 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
   const onCancelRef = useRef(onCancel);
   onCancelRef.current = onCancel;
 
-  // 텍스트 변경 시 ghost span 너비를 읽어 tf.w 동기화
-  // initSizeRef.w도 같이 rebase해서 textFontSize(= item.fontSize * tf.w/initW)가 유지됨
+  // 텍스트 변경 시 measureText로 너비 계산해 tf.w 동기화
   useEffect(() => {
-    if (item.kind !== 'text' || !ghostRef.current) return;
-    const newW = Math.max(ghostRef.current.offsetWidth, MIN_W);
+    if (item.kind !== 'text') return;
+    const fontSize = item.fontSize * (tf.w / (initSizeRef.current?.w ?? tf.w));
+    const oc = document.createElement('canvas').getContext('2d')!;
+    oc.font = `bold ${fontSize}px ${item.fontFamily}`;
+    const measured = oc.measureText(localText || 'Aa').width + 24;
+    const newW = Math.max(measured, MIN_W);
     if (initSizeRef.current) {
       initSizeRef.current.w = initSizeRef.current.w * newW / tfWRef.current;
     }
