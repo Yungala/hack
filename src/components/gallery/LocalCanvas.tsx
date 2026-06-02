@@ -276,7 +276,47 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
         return new Promise((resolve, reject) => {
           const canvas = canvasRef.current;
           if (!canvas) { reject(new Error('캔버스가 없습니다')); return; }
-          canvas.toBlob((blob) => {
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) { reject(new Error('컨텍스트 없음')); return; }
+
+          // 실제 그려진 픽셀의 bounding box 계산
+          const imageData = ctx.getImageData(0, 0, LOGICAL_W, LOGICAL_H);
+          const d = imageData.data;
+          let minX = LOGICAL_W, minY = LOGICAL_H, maxX = 0, maxY = 0;
+          for (let y = 0; y < LOGICAL_H; y++) {
+            for (let x = 0; x < LOGICAL_W; x++) {
+              if (d[(y * LOGICAL_W + x) * 4 + 3] > 0) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+
+          // 아무것도 안 그렸으면 전체 저장
+          if (minX > maxX || minY > maxY) {
+            canvas.toBlob((blob) => {
+              if (blob) resolve(blob);
+              else reject(new Error('캔버스 export 실패'));
+            }, 'image/png');
+            return;
+          }
+
+          // 여백 추가 후 크롭
+          const PAD = 24;
+          const cropX = Math.max(0, minX - PAD);
+          const cropY = Math.max(0, minY - PAD);
+          const cropW = Math.min(LOGICAL_W, maxX + PAD) - cropX;
+          const cropH = Math.min(LOGICAL_H, maxY + PAD) - cropY;
+
+          const cropped = document.createElement('canvas');
+          cropped.width = cropW;
+          cropped.height = cropH;
+          const cc = cropped.getContext('2d')!;
+          cc.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+          cropped.toBlob((blob) => {
             if (blob) resolve(blob);
             else reject(new Error('캔버스 export 실패'));
           }, 'image/png');
