@@ -51,25 +51,33 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
   const ghostRef = useRef<HTMLSpanElement>(null);
 
   const dragRef = useRef<DragOp | null>(null);
-  const tfWRef = useRef(tf.w); // tf.w 최신값을 stale closure 없이 참조
+  const tfWRef = useRef(tf.w);
   tfWRef.current = tf.w;
   const onCancelRef = useRef(onCancel);
   onCancelRef.current = onCancel;
 
-  // 텍스트 변경 시 measureText로 너비 계산해 tf.w 동기화
-  useEffect(() => {
+  function remeasureWidth(text: string, fontFamily: string) {
     if (item.kind !== 'text') return;
-    const fontSize = item.fontSize * (tf.w / (initSizeRef.current?.w ?? tf.w));
+    const curFontSize = item.fontSize * (tfWRef.current / (initSizeRef.current?.w ?? tfWRef.current));
     const oc = document.createElement('canvas').getContext('2d')!;
-    oc.font = `bold ${fontSize}px ${item.fontFamily}`;
-    const measured = oc.measureText(localText || 'Aa').width + 24;
-    const newW = Math.max(measured, MIN_W);
+    oc.font = `bold ${curFontSize}px ${fontFamily}`;
+    const newW = Math.max(oc.measureText(text || 'Aa').width + 24, MIN_W);
     if (initSizeRef.current) {
       initSizeRef.current.w = initSizeRef.current.w * newW / tfWRef.current;
     }
     setTf(prev => ({ ...prev, w: newW }));
+  }
+
+  useEffect(() => {
+    remeasureWidth(localText, item.kind === 'text' ? item.fontFamily : '');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localText]);
+
+  useEffect(() => {
+    if (item.kind !== 'text') return;
+    remeasureWidth(localText, item.fontFamily);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.kind === 'text' ? item.fontFamily : null]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -108,6 +116,12 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
       window.removeEventListener('pointerup', onUp);
     };
   }, []);
+
+  function startMove(e: React.PointerEvent) {
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    dragRef.current = { op: 'move', startX: e.clientX, startY: e.clientY, startCX: tf.cx, startCY: tf.cy };
+  }
 
   function handleConfirm() {
     if (item.kind === 'text' && !localText.trim()) { onCancel(); return; }
@@ -155,8 +169,7 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
   const itemTop = tf.cy - tf.h / 2;
 
   return (
-    <div className="fixed inset-0 z-30" style={{ touchAction: 'none' }}>
-      <div className="absolute inset-0 bg-black/25 pointer-events-none" />
+    <div className="fixed inset-0 z-30 pointer-events-none" style={{ touchAction: 'none' }}>
 
       {/* 변환 대상 */}
       <div
@@ -171,14 +184,20 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
           cursor: 'move',
           userSelect: 'none',
           touchAction: 'none',
+          pointerEvents: 'auto',
         }}
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          dragRef.current = { op: 'move', startX: e.clientX, startY: e.clientY, startCX: tf.cx, startCY: tf.cy };
-        }}
+        onPointerDown={startMove}
       >
+        {/* 드래그 히트존 (텍스트 전용) */}
+        {item.kind === 'text' && (
+          <div
+            style={{ position: 'absolute', inset: -12, cursor: 'move', zIndex: 0 }}
+            onPointerDown={startMove}
+          />
+        )}
+
         {/* 점선 테두리 */}
-        <div className="absolute inset-0 border-2 border-dashed border-white/75 rounded-sm pointer-events-none" />
+        <div className="absolute inset-0 border-2 border-dashed border-black/50 rounded-sm pointer-events-none" style={{ zIndex: 1 }} />
 
         {/* 콘텐츠 */}
         {item.kind === 'image' ? (
@@ -191,23 +210,20 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            pointerEvents: 'none',
           }}>
-            <div
-              style={{ display: 'grid', pointerEvents: 'auto' }}
-              onPointerDown={(e) => e.stopPropagation()}
-            >
+            <div style={{ display: 'grid' }}>
               <span ref={ghostRef} style={{
                 gridArea: '1/1', visibility: 'hidden', whiteSpace: 'pre',
                 fontSize: textFontSize, fontFamily: item.fontFamily, fontWeight: 'bold',
                 padding: '0 4px', minWidth: '2ch',
               }}>
-                {localText + '​'}
+                {localText + ''}
               </span>
               <input
                 autoFocus
                 value={localText}
                 onChange={(e) => setLocalText(e.target.value)}
+                onPointerDown={(e) => e.stopPropagation()}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); handleConfirm(); }
                 }}
@@ -224,14 +240,15 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
         {/* 회전 줄기 */}
         <div
           className="absolute pointer-events-none"
-          style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%)', width: 1, height: 32, background: 'rgba(255,255,255,0.6)' }}
+          style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%)', width: 1, height: 32, background: 'rgba(0,0,0,0.3)' }}
         />
         {/* 회전 핸들 */}
         <div
-          className="absolute rounded-full bg-white border-2 border-zinc-600 shadow"
-          style={{ width: 18, height: 18, bottom: 'calc(100% + 32px)', left: '50%', transform: 'translateX(-50%)', cursor: 'grab' }}
+          className="absolute rounded-full bg-white border-2 border-zinc-400 shadow"
+          style={{ width: 18, height: 18, bottom: 'calc(100% + 32px)', left: '50%', transform: 'translateX(-50%)', cursor: 'grab', pointerEvents: 'auto' }}
           onPointerDown={(e) => {
             e.stopPropagation();
+            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
             const a = Math.atan2(e.clientY - tf.cy, e.clientX - tf.cx) * (180 / Math.PI) + 90;
             dragRef.current = { op: 'rotate', centerX: tf.cx, centerY: tf.cy, startAngle: a, startRot: tf.rot };
           }}
@@ -239,17 +256,23 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
 
         {/* SE 크기 조절 핸들 */}
         <div
-          className="absolute bg-white border-2 border-zinc-600 rounded-sm shadow"
-          style={{ width: 14, height: 14, bottom: -7, right: -7, cursor: 'se-resize' }}
+          className="absolute bg-white border-2 border-zinc-400 rounded-sm shadow"
+          style={{ width: 14, height: 14, bottom: -7, right: -7, cursor: 'se-resize', pointerEvents: 'auto' }}
           onPointerDown={(e) => {
             e.stopPropagation();
+            (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
             dragRef.current = { op: 'resize', startX: e.clientX, startY: e.clientY, startCX: tf.cx, startCY: tf.cy, startW: tf.w, startH: tf.h };
           }}
         />
       </div>
 
-      {/* 확인 / 취소 — SE 핸들 아래에 배치 */}
-      <div className="fixed z-40 flex gap-3" style={{ left: tf.cx + tf.w / 2 - 44, top: tf.cy + tf.h / 2 + 16 }}>
+      {/* 확인 / 취소 */}
+      <div className="fixed z-40 flex gap-3" style={{
+        left: tf.cx,
+        top: tf.cy + tf.h / 2 + 24,
+        transform: 'translateX(-50%)',
+        pointerEvents: 'auto',
+      }}>
         <button
           onClick={onCancel}
           className="w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-colors"

@@ -118,15 +118,6 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
                   style={{ fontFamily: f.value }}
                 >A</button>
               ))}
-              <div className="w-px h-5 bg-black/10 mx-1" />
-              {THICKNESSES.map((t) => (
-                <button
-                  key={t}
-                  aria-label={SIZE_LABELS[t]}
-                  onClick={() => setThickness(t)}
-                  className={`w-8 h-7 rounded-lg text-xs font-bold transition-colors ${thickness === t ? 'bg-black text-white' : 'text-black/60 hover:bg-black/8'}`}
-                >{SIZE_LABELS[t]}</button>
-              ))}
             </div>
           </div>
         )}

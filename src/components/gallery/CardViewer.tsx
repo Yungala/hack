@@ -91,7 +91,7 @@ export function CardViewer({ drawing, onClose, onLiked }: CardViewerProps) {
         </div>
 
         {/* 사이드 패널 */}
-        <div className="md:w-72 shrink-0 flex flex-col border-t md:border-t-0 md:border-l border-[#34485b]/10" style={{ maxHeight: '40vh' }}>
+        <div className="md:w-72 shrink-0 flex flex-col border-t md:border-t-0 md:border-l border-[#34485b]/10 min-h-0 md:h-auto">
           {/* 헤더 */}
           <div className="px-4 py-3 border-b border-[#34485b]/10">
             <span className="text-sm text-[#34485b]/60">{formatTime(drawing.created_at)}</span>

@@ -108,7 +108,7 @@ function redraw(
 export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
   function LocalCanvas({ className, style }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { color, thickness, tool, fontFamily } = useDrawingStore();
+    const { color, thickness, tool, fontFamily, clearTool } = useDrawingStore();
 
     const strokesRef = useRef<LocalStroke[]>([]);
     const currentStrokeRef = useRef<LocalStroke | null>(null);
@@ -120,6 +120,14 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
       initialCX?: number;
       initialCY?: number;
     } | null>(null);
+
+    // 색상 변경 시 text item에 반영
+    useEffect(() => {
+      setTransformPending(prev => {
+        if (!prev || prev.item.kind !== 'text') return prev;
+        return { ...prev, item: { ...prev.item, color } };
+      });
+    }, [color]);
 
     const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -364,7 +372,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
             initialCX={transformPending.initialCX}
             initialCY={transformPending.initialCY}
             onConfirm={handleTransformConfirm}
-            onCancel={() => setTransformPending(null)}
+            onCancel={() => { setTransformPending(null); clearTool(); }}
           />
         )}
       </>
