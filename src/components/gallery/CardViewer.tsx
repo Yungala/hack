@@ -132,12 +132,12 @@ export function CardViewer({ drawing, onClose, onLiked }: CardViewerProps) {
               onChange={e => setInput(e.target.value)}
               maxLength={300}
               placeholder="댓글 추가..."
-              className="flex-1 text-sm bg-[#f5f7f9] rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#34485b]/30 placeholder:text-[#34485b]/30"
+              className="flex-1 text-sm text-[#34485b] bg-[#f5f7f9] rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#34485b]/30 placeholder:text-[#34485b]/30"
             />
             <button
               type="submit"
               disabled={!input.trim() || submitting}
-              className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#34485b] text-white disabled:opacity-30 transition-opacity shrink-0"
+              className="self-stretch px-2.5 rounded-lg flex items-center justify-center bg-[#34485b] text-white disabled:opacity-30 transition-opacity shrink-0"
             >
               <Send size={14} />
             </button>
