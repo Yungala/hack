@@ -23,12 +23,14 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
   const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
   const [presenceCount, setPresenceCount] = useState(1);
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
+  const [pan, setPan] = useState({ x: 0, y: 0 });
 
   const userId = useRef(crypto.randomUUID());
   const userColor = useRef(CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastTrackTime = useRef(0);
   const currentDraggingId = useRef<string | null>(null);
+  const panStart = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
   // 초기 로드
   useEffect(() => {
@@ -143,6 +145,25 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
     broadcastCursor(0, 0, null);
   }
 
+  function handleBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).closest('[data-card]')) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    panStart.current = { px: e.clientX, py: e.clientY, ox: pan.x, oy: pan.y };
+  }
+
+  function handleBoardPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    broadcastCursor(e.clientX, e.clientY, currentDraggingId.current);
+    if (!panStart.current) return;
+    setPan({
+      x: panStart.current.ox + (e.clientX - panStart.current.px),
+      y: panStart.current.oy + (e.clientY - panStart.current.py),
+    });
+  }
+
+  function handleBoardPointerUp() {
+    panStart.current = null;
+  }
+
   const merged = useMemo(() => {
     const ids = new Set(drawings.map((d) => d.id));
     const optimistic = extraDrawings.filter((d) => !ids.has(d.id));
@@ -159,7 +180,13 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
   }, [remoteCursors]);
 
   return (
-    <div className="relative w-full h-full" onMouseMove={handleMouseMove}>
+    <div
+      className="relative w-full h-full overflow-hidden"
+      style={{ cursor: 'grab' }}
+      onPointerDown={handleBoardPointerDown}
+      onPointerMove={handleBoardPointerMove}
+      onPointerUp={handleBoardPointerUp}
+    >
       {/* 접속자 수 */}
       <div className="fixed top-3 right-4 z-40 flex items-center gap-1.5 bg-black/50 backdrop-blur rounded-full px-3 py-1.5 text-white text-xs select-none">
         <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
@@ -178,24 +205,30 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
         </div>
       )}
 
-      {/* 카드 자유 배치 */}
-      {merged.map((drawing) => (
-        <GalleryCard
-          key={drawing.id}
-          drawing={drawing}
-          isRemotelyDragged={remotelyDraggedIds.has(drawing.id)}
-          onDragStart={() => handleDragStart(drawing.id)}
-          onDragEnd={handleDragEnd}
-          onClick={setViewerDrawing}
-        />
-      ))}
+      {/* pan 레이어: 카드 + 커서 */}
+      <div
+        className="absolute inset-0"
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}
+      >
+        {/* 카드 자유 배치 */}
+        {merged.map((drawing) => (
+          <GalleryCard
+            key={drawing.id}
+            drawing={drawing}
+            isRemotelyDragged={remotelyDraggedIds.has(drawing.id)}
+            onDragStart={() => handleDragStart(drawing.id)}
+            onDragEnd={handleDragEnd}
+            onClick={setViewerDrawing}
+          />
+        ))}
 
-      {/* 다른 유저 커서 */}
-      {Array.from(remoteCursors.entries()).map(([id, cursor]) => (
-        cursor.x === 0 && cursor.y === 0 ? null : (
-          <RemoteCursorEl key={id} cursor={cursor} />
-        )
-      ))}
+        {/* 다른 유저 커서 */}
+        {Array.from(remoteCursors.entries()).map(([id, cursor]) => (
+          cursor.x === 0 && cursor.y === 0 ? null : (
+            <RemoteCursorEl key={id} cursor={cursor} />
+          )
+        ))}
+      </div>
 
       {/* 카드 뷰어 모달 */}
       {viewerDrawing && (

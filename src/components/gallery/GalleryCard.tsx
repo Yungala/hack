@@ -87,6 +87,7 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
         outlineOffset: '3px',
         borderRadius: 4,
       }}
+      data-card="true"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
