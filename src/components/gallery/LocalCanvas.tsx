@@ -37,7 +37,7 @@ interface PlacedImage {
 }
 
 export interface LocalCanvasHandle {
-  getBlob: () => Promise<Blob>;
+  getBlob: (includeBackground: boolean) => Promise<Blob>;
   clear: () => void;
   handleImageFile: (file: File) => void;
   isEmpty: () => boolean;
@@ -274,22 +274,39 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
     }
 
     useImperativeHandle(ref, () => ({
-      getBlob(): Promise<Blob> {
+      getBlob(includeBackground: boolean): Promise<Blob> {
         return new Promise((resolve, reject) => {
-          const canvas = canvasRef.current;
-          if (!canvas) { reject(new Error('캔버스가 없습니다')); return; }
-
-          const ctx = canvas.getContext('2d');
+          // 콘텐츠를 오프스크린 캔버스에 다시 렌더 (배경 옵션에 따라 흰색 채움)
+          const off = document.createElement('canvas');
+          off.width = LOGICAL_W;
+          off.height = LOGICAL_H;
+          const ctx = off.getContext('2d');
           if (!ctx) { reject(new Error('컨텍스트 없음')); return; }
 
-          // 흰색(255,255,255)이 아닌 픽셀의 bounding box 계산
-          const imageData = ctx.getImageData(0, 0, LOGICAL_W, LOGICAL_H);
-          const d = imageData.data;
+          if (includeBackground) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+          }
+          for (const img of imagesRef.current) {
+            const el = imageElsRef.current.get(img.id);
+            if (el && el.naturalWidth) {
+              ctx.drawImage(el, img.x - img.width / 2, img.y - img.height / 2, img.width, img.height);
+            }
+          }
+          for (const stroke of strokesRef.current) {
+            drawStroke(ctx, stroke);
+          }
+
+          // 콘텐츠 bounding box 계산 (배경 포함 시 흰색 제외, 미포함 시 투명 제외)
+          const d = ctx.getImageData(0, 0, LOGICAL_W, LOGICAL_H).data;
           let minX = LOGICAL_W, minY = LOGICAL_H, maxX = 0, maxY = 0;
           for (let y = 0; y < LOGICAL_H; y++) {
             for (let x = 0; x < LOGICAL_W; x++) {
               const i = (y * LOGICAL_W + x) * 4;
-              if (d[i] !== 255 || d[i + 1] !== 255 || d[i + 2] !== 255) {
+              const isContent = includeBackground
+                ? (d[i] !== 255 || d[i + 1] !== 255 || d[i + 2] !== 255)
+                : d[i + 3] !== 0;
+              if (isContent) {
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
                 if (y < minY) minY = y;
@@ -300,7 +317,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
 
           // 아무것도 안 그렸으면 전체 저장
           if (minX > maxX || minY > maxY) {
-            canvas.toBlob((blob) => {
+            off.toBlob((blob) => {
               if (blob) resolve(blob);
               else reject(new Error('캔버스 export 실패'));
             }, 'image/png');
@@ -317,7 +334,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
           cropped.width = cropW;
           cropped.height = cropH;
           const cc = cropped.getContext('2d')!;
-          cc.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+          cc.drawImage(off, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
           cropped.toBlob((blob) => {
             if (blob) resolve(blob);
             else reject(new Error('캔버스 export 실패'));

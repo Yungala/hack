@@ -21,18 +21,28 @@ interface RemoteCursor {
 
 const CURSOR_COLORS = ['#FF6B6B', '#4ECDC4', '#A78BFA', '#F59E0B', '#34D399', '#F472B6', '#60A5FA'];
 
+// 고정 캔버스(월드) 크기
+const BOARD_W = 1800;
+const BOARD_H = 1000;
+// 화면이 월드보다 클 때 허용하는 여유 pan
+const EDGE_MARGIN = 80;
+
 export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCountChange }: GalleryBoardProps) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
+  const [remoteCardPositions, setRemoteCardPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const [remoteViewing, setRemoteViewing] = useState<Map<string, string>>(new Map());
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
+  const [viewport, setViewport] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   const userId = useRef(crypto.randomUUID());
   const userColor = useRef(CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastTrackTime = useRef(0);
   const currentDraggingId = useRef<string | null>(null);
+  const draggingCardPos = useRef<{ x: number; y: number } | null>(null);
   const localDrawingIds = useRef<Set<string>>(new Set());
   const panStart = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
 
@@ -40,6 +50,13 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
   useEffect(() => {
     extraDrawings.forEach((d) => localDrawingIds.current.add(d.id));
   }, [extraDrawings]);
+
+  // 뷰포트 크기 추적
+  useEffect(() => {
+    const onResize = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // 초기 로드
   useEffect(() => {
@@ -80,6 +97,13 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
           setDrawings((prev) =>
             prev.map((d) => (d.id === result.data.id ? result.data : d))
           );
+          // 실제 위치가 도착하면 원격 추종 위치 해제 (띠용 방지)
+          setRemoteCardPositions((prev) => {
+            if (!prev.has(result.data.id)) return prev;
+            const next = new Map(prev);
+            next.delete(result.data.id);
+            return next;
+          });
         }
       )
       .subscribe();
@@ -112,16 +136,33 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
     });
     channel
       .on('broadcast', { event: 'cursor' }, ({ payload }) => {
-        const { uid, x, y, color, draggingCardId } = payload as RemoteCursor & { uid: string };
+        const { uid, x, y, color, draggingCardId, cardX, cardY } = payload as RemoteCursor & { uid: string; cardX: number | null; cardY: number | null };
         setRemoteCursors((prev) => {
           const next = new Map(prev);
           next.set(uid, { x, y, color, draggingCardId });
+          return next;
+        });
+        if (draggingCardId && cardX != null && cardY != null) {
+          setRemoteCardPositions((prev) => {
+            const next = new Map(prev);
+            next.set(draggingCardId, { x: cardX, y: cardY });
+            return next;
+          });
+        }
+      })
+      .on('broadcast', { event: 'viewing' }, ({ payload }) => {
+        const { uid, cardId } = payload as { uid: string; cardId: string | null };
+        setRemoteViewing((prev) => {
+          const next = new Map(prev);
+          if (cardId) next.set(uid, cardId);
+          else next.delete(uid);
           return next;
         });
       })
       .on('broadcast', { event: 'leave' }, ({ payload }) => {
         const { uid } = payload as { uid: string };
         setRemoteCursors((prev) => { const next = new Map(prev); next.delete(uid); return next; });
+        setRemoteViewing((prev) => { const next = new Map(prev); next.delete(uid); return next; });
       })
       .subscribe();
     channelRef.current = channel;
@@ -145,20 +186,51 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
     channelRef.current?.send({
       type: 'broadcast',
       event: 'cursor',
-      payload: { uid: userId.current, x, y, color: userColor.current, draggingCardId },
+      payload: {
+        uid: userId.current, x, y, color: userColor.current, draggingCardId,
+        cardX: draggingCardId ? draggingCardPos.current?.x ?? null : null,
+        cardY: draggingCardId ? draggingCardPos.current?.y ?? null : null,
+      },
     });
+  }
+
+  function broadcastViewing(cardId: string | null) {
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'viewing',
+      payload: { uid: userId.current, cardId },
+    });
+  }
+
+  function handleOpenViewer(drawing: Drawing) {
+    setViewerDrawing(drawing);
+    broadcastViewing(drawing.id);
+  }
+
+  function handleCloseViewer() {
+    setViewerDrawing(null);
+    broadcastViewing(null);
   }
 
   function handleDragStart(cardId: string) {
     currentDraggingId.current = cardId;
   }
 
+  function handleDragMove(x: number, y: number) {
+    draggingCardPos.current = { x, y };
+  }
+
   function handleDragEnd() {
     currentDraggingId.current = null;
+    draggingCardPos.current = null;
     broadcastCursor(0, 0, null);
   }
 
-  const PAN_LIMIT = 100;
+  // 월드 중앙 정렬 오프셋 + pan 허용 범위
+  const offsetX = (viewport.w - BOARD_W) / 2;
+  const offsetY = (viewport.h - BOARD_H) / 2;
+  const panLimitX = BOARD_W > viewport.w ? (BOARD_W - viewport.w) / 2 : EDGE_MARGIN;
+  const panLimitY = BOARD_H > viewport.h ? (BOARD_H - viewport.h) / 2 : EDGE_MARGIN;
 
   function rubberBand(value: number, limit: number) {
     if (Math.abs(value) <= limit) return value;
@@ -180,15 +252,15 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
     if (!panStart.current) return;
     const nx = panStart.current.ox + (e.clientX - panStart.current.px);
     const ny = panStart.current.oy + (e.clientY - panStart.current.py);
-    setPan({ x: rubberBand(nx, PAN_LIMIT), y: rubberBand(ny, PAN_LIMIT) });
+    setPan({ x: rubberBand(nx, panLimitX), y: rubberBand(ny, panLimitY) });
   }
 
   function handleBoardPointerUp() {
     panStart.current = null;
     setIsPanning(false);
     setPan((prev) => ({
-      x: Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, prev.x)),
-      y: Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, prev.y)),
+      x: Math.max(-panLimitX, Math.min(panLimitX, prev.x)),
+      y: Math.max(-panLimitY, Math.min(panLimitY, prev.y)),
     }));
   }
 
@@ -207,10 +279,15 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
     return ids;
   }, [remoteCursors]);
 
+  // 다른 유저가 상세를 보고 있는 카드 ID 집합
+  const remotelyViewedIds = useMemo(() => {
+    return new Set(remoteViewing.values());
+  }, [remoteViewing]);
+
   return (
     <div
       className="relative w-full h-full"
-      style={{ cursor: 'grab' }}
+      style={{ cursor: 'grab', touchAction: 'none' }}
       onPointerDown={handleBoardPointerDown}
       onPointerMove={handleBoardPointerMove}
       onPointerUp={handleBoardPointerUp}
@@ -227,27 +304,41 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
         </div>
       )}
 
-      {/* pan 레이어: 카드 + 커서 */}
+      {/* 월드 레이어: 고정 캔버스 영역, 카드 자유 배치 */}
       <div
-        className="absolute inset-0"
+        className="absolute"
         style={{
+          left: offsetX,
+          top: offsetY,
+          width: BOARD_W,
+          height: BOARD_H,
           transform: `translate(${pan.x}px, ${pan.y}px)`,
           transition: isPanning ? 'none' : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         }}
       >
-        {/* 카드 자유 배치 */}
         {merged.map((drawing) => (
           <GalleryCard
             key={drawing.id}
             drawing={drawing}
             isRemotelyDragged={remotelyDraggedIds.has(drawing.id)}
+            isRemotelyViewed={remotelyViewedIds.has(drawing.id)}
+            remotePos={remoteCardPositions.get(drawing.id)}
             onDragStart={() => handleDragStart(drawing.id)}
+            onDragMove={handleDragMove}
             onDragEnd={handleDragEnd}
-            onClick={setViewerDrawing}
+            onClick={handleOpenViewer}
           />
         ))}
+      </div>
 
-        {/* 다른 유저 커서 */}
+      {/* 커서 레이어: pan 만 따라감 (월드 오프셋 제외) */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px)`,
+          transition: isPanning ? 'none' : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        }}
+      >
         {Array.from(remoteCursors.entries()).map(([id, cursor]) => (
           cursor.x === 0 && cursor.y === 0 ? null : (
             <RemoteCursorEl key={id} cursor={cursor} />
@@ -259,7 +350,7 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
       {viewerDrawing && (
         <CardViewer
           drawing={viewerDrawing}
-          onClose={() => setViewerDrawing(null)}
+          onClose={handleCloseViewer}
           onLiked={(newLikes) => setViewerDrawing(prev => prev ? { ...prev, likes: newLikes } : prev)}
         />
       )}

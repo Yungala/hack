@@ -23,6 +23,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
   const canvasRef = useRef<LocalCanvasHandle>(null);
   const [evalState, setEvalState] = useState<EvalState>({ status: 'idle' });
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [includeBackground, setIncludeBackground] = useState(true);
 
   const handleClose = useCallback(() => {
     canvasRef.current?.clear();
@@ -60,7 +61,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
     setEvalState({ status: 'evaluating' });
 
     try {
-      const blob = await canvasRef.current.getBlob();
+      const blob = await canvasRef.current.getBlob(includeBackground);
 
       // base64 변환
       const arrayBuffer = await blob.arrayBuffer();
@@ -86,8 +87,9 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
 
       // 승인 → 업로드 + insert
       const imageUrl = await uploadDrawingImage(blob);
-      const cx = Math.round(window.innerWidth / 2);
-      const cy = Math.round(window.innerHeight / 2);
+      // 월드(1800x1000) 중앙 부근에 약간의 랜덤 오프셋으로 배치
+      const cx = Math.round(900 + (Math.random() - 0.5) * 400);
+      const cy = Math.round(500 + (Math.random() - 0.5) * 300);
       const drawing = await insertDrawing({ image_url: imageUrl, x: cx, y: cy });
       onDrawingAdded(drawing);
 
@@ -206,37 +208,28 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
         </div>
 
         {/* 푸터 */}
-        {isMobile ? (
-          <div className="shrink-0 flex flex-col border-t border-[#34485b]/20">
-            <div className="flex items-center justify-center px-5 py-2">
-              <DrawingToolbar
-                variant="modal"
-                onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}
-              />
-            </div>
-            <button
-              onClick={handleConfirm}
-              disabled={isSubmitting}
-              className="mx-4 mb-4 py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-base hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              갤러리에 추가
-            </button>
-          </div>
-        ) : (
-          <div className="shrink-0 relative flex items-center justify-center px-5 py-3 border-t border-[#34485b]/20">
-            <DrawingToolbar
-              variant="modal"
-              onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}
+        <div className="shrink-0 relative flex items-center justify-center px-5 py-3 border-t border-[#34485b]/20">
+          <label className="absolute left-5 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors">
+            <input
+              type="checkbox"
+              checked={includeBackground}
+              onChange={(e) => setIncludeBackground(e.target.checked)}
+              className="w-4 h-4 accent-[#34485b] cursor-pointer"
             />
-            <button
-              onClick={handleConfirm}
-              disabled={isSubmitting}
-              className="absolute right-5 flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              완료
-            </button>
-          </div>
-        )}
+            배경 포함
+          </label>
+          <DrawingToolbar
+            variant="modal"
+            onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}
+          />
+          <button
+            onClick={handleConfirm}
+            disabled={isSubmitting}
+            className="absolute right-5 flex items-center gap-1.5 h-[40px] px-5 rounded-lg bg-black text-white font-medium text-sm hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            완료
+          </button>
+        </div>
       </div>
 
       {/* 모달 하단 경고 문구 */}

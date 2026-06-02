@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
 import { Plus, Heart } from 'lucide-react';
@@ -7,7 +7,7 @@ import { CanvasModal } from '@/components/gallery/CanvasModal';
 import { LikesDrawer } from '@/components/gallery/LikesDrawer';
 import { CardViewer } from '@/components/gallery/CardViewer';
 import SpotlightCard from '@/components/ui/SpotlightCard';
-import type { Drawing } from '@/lib/supabase';
+import { supabase, type Drawing } from '@/lib/supabase';
 
 export const Route = createFileRoute('/')({
   component: GalleryBoardPage,
@@ -20,6 +20,38 @@ function GalleryBoardPage() {
   const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
   const [presenceCount, setPresenceCount] = useState(1);
   const [drawingCount, setDrawingCount] = useState(0);
+  const [drawingNowCount, setDrawingNowCount] = useState(0);
+
+  const drawingUserId = useRef(crypto.randomUUID());
+  const drawingChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // 그림 그리는 중 presence 채널 (관전 + 본인 track)
+  useEffect(() => {
+    const channel = supabase.channel('gallery-drawing', {
+      config: { presence: { key: drawingUserId.current } },
+    });
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const others = Object.keys(channel.presenceState()).filter(
+          (k) => k !== drawingUserId.current
+        );
+        setDrawingNowCount(others.length);
+      })
+      .subscribe();
+    drawingChannelRef.current = channel;
+    return () => {
+      supabase.removeChannel(channel);
+      drawingChannelRef.current = null;
+    };
+  }, []);
+
+  // 캔버스 열림 상태를 presence로 track/untrack
+  useEffect(() => {
+    const channel = drawingChannelRef.current;
+    if (!channel) return;
+    if (isCanvasOpen) channel.track({ drawing: true });
+    else channel.untrack();
+  }, [isCanvasOpen]);
 
   function handleDrawingAdded(drawing: Drawing) {
     setExtraDrawings((prev) => {
@@ -77,11 +109,27 @@ function GalleryBoardPage() {
         인기 그림
       </button>
 
+      {/* 그림 그리는 중 표시 */}
+      {drawingNowCount > 0 && (
+        <div className="fixed top-16 md:top-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#1a1a1a] select-none pointer-events-none">
+          <span className="relative flex w-2 h-2">
+            <span className="absolute inline-flex w-full h-full rounded-full bg-green-500 opacity-60 animate-ping" />
+            <span className="relative inline-flex w-2 h-2 rounded-full bg-green-500" />
+          </span>
+          {drawingNowCount}명이 그림을 그리는 중...
+        </div>
+      )}
+
       {/* + 그림 추가 버튼 */}
       <div className="fixed bottom-[62px] left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2">
-        <p className="text-xs pointer-events-none select-none" style={{ color: 'rgba(0,0,0,0.35)' }}>
-          그림을 추가해서 캔버스를 꾸며주세요
-        </p>
+        <div className="relative pointer-events-none select-none">
+          <div className="px-3 py-1.5 rounded-lg bg-black text-white text-xs font-medium shadow-md whitespace-nowrap">
+            그림을 추가해서 캔버스를 꾸며주세요
+          </div>
+          <div
+            className="absolute left-1/2 -translate-x-1/2 -bottom-1 w-2.5 h-2.5 bg-black rotate-45 rounded-[2px]"
+          />
+        </div>
         <SpotlightCard
           className="!bg-black !border-transparent !p-0 !rounded-full shadow-lg"
           spotlightColor="rgba(255, 255, 255, 0.2)"
@@ -98,7 +146,7 @@ function GalleryBoardPage() {
       </div>
 
       {/* 통계 */}
-      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 text-sm select-none pointer-events-none"
+      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 select-none pointer-events-none whitespace-nowrap text-sm"
         style={{ color: 'rgba(0,0,0,0.55)', fontFamily: 'Pretendard, sans-serif' }}
       >
         <span>접속한 사람 : {presenceCount}명</span>

@@ -6,14 +6,17 @@ import { cn } from '@/lib/utils';
 interface GalleryCardProps {
   drawing: Drawing;
   isRemotelyDragged: boolean;
+  isRemotelyViewed?: boolean;
+  remotePos?: { x: number; y: number };
   onDragStart: () => void;
+  onDragMove?: (x: number, y: number) => void;
   onDragEnd: () => void;
   onClick: (drawing: Drawing) => void;
 }
 
 const CARD_MAX = 100;
 
-export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd, onClick }: GalleryCardProps) {
+export function GalleryCard({ drawing, isRemotelyDragged, isRemotelyViewed, remotePos, onDragStart, onDragMove, onDragEnd, onClick }: GalleryCardProps) {
   const [pos, setPos] = useState({ x: drawing.x, y: drawing.y });
   const [imageLoaded, setImageLoaded] = useState(false);
   const [size, setSize] = useState({ w: CARD_MAX, h: CARD_MAX });
@@ -22,12 +25,14 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
   const hasDragged = useRef(false);
   const isDragging = useRef(false);
 
-  const PAN_LIMIT = 100;
-  const CARD_INSET = 100;
-  const minX = -PAN_LIMIT + CARD_INSET;
-  const minY = -PAN_LIMIT + CARD_INSET;
-  function maxX() { return window.innerWidth + PAN_LIMIT - CARD_INSET; }
-  function maxY() { return window.innerHeight + PAN_LIMIT - CARD_INSET; }
+  // 월드(고정 캔버스) 경계
+  const BOARD_W = 1800;
+  const BOARD_H = 1000;
+  const CARD_HALF = 60;
+  const minX = CARD_HALF;
+  const minY = CARD_HALF;
+  function maxX() { return BOARD_W - CARD_HALF; }
+  function maxY() { return BOARD_H - CARD_HALF; }
 
   useEffect(() => {
     if (!isDragging.current) {
@@ -58,10 +63,10 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
       hasDragged.current = true;
     }
     if (hasDragged.current) {
-      setPos({
-        x: dragStart.current.cardX + dx,
-        y: dragStart.current.cardY + dy,
-      });
+      const nx = dragStart.current.cardX + dx;
+      const ny = dragStart.current.cardY + dy;
+      setPos({ x: nx, y: ny });
+      onDragMove?.(nx, ny);
     }
   }
 
@@ -86,19 +91,28 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
     }
   }
 
+  const effectivePos = remotePos ?? pos;
+  const isFollowing = remotePos != null;
+  const showOutline = isRemotelyDragged || isRemotelyViewed;
+
   return (
     <div
       style={{
         position: 'absolute',
-        left: pos.x,
-        top: pos.y,
+        left: effectivePos.x,
+        top: effectivePos.y,
         width: size.w,
         height: size.h,
         transform: 'translate(-50%, -50%)',
-        transition: isCardDragging ? 'none' : 'left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        transition: isCardDragging
+          ? 'none'
+          : isFollowing
+            ? 'left 0.08s linear, top 0.08s linear'
+            : 'left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         cursor: 'grab',
         userSelect: 'none',
-        outline: isRemotelyDragged ? '2.5px solid #60A5FA' : 'none',
+        touchAction: 'none',
+        outline: showOutline ? '2.5px solid #60A5FA' : 'none',
         outlineOffset: '3px',
         borderRadius: 4,
       }}
