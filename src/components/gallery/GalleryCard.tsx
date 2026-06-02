@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Drawing } from '@/lib/supabase';
 import { updateDrawingPosition } from '@/lib/api/drawings';
+import { cn } from '@/lib/utils';
 
 interface GalleryCardProps {
   drawing: Drawing;
@@ -15,6 +16,7 @@ const CARD_H = 100;
 
 export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd, onClick }: GalleryCardProps) {
   const [pos, setPos] = useState({ x: drawing.x, y: drawing.y });
+  const [imageLoaded, setImageLoaded] = useState(false);
   const dragStart = useRef<{ mouseX: number; mouseY: number; cardX: number; cardY: number } | null>(null);
   const hasDragged = useRef(false);
   const isDragging = useRef(false);
@@ -93,11 +95,15 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
       onPointerUp={handlePointerUp}
       className="overflow-hidden"
     >
+      {!imageLoaded && (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+      )}
       <img
         src={drawing.image_url}
         alt="그림 카드"
-        className="w-full h-full object-cover pointer-events-none"
+        className={cn('w-full h-full object-cover pointer-events-none transition-opacity duration-300', imageLoaded ? 'opacity-100' : 'opacity-0')}
         draggable={false}
+        onLoad={() => setImageLoaded(true)}
       />
     </div>
   );
