@@ -150,6 +150,14 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
       });
     }, [color]);
 
+    // 폰트/크기 변경 시 text item에 반영
+    useEffect(() => {
+      setTransformPending(prev => {
+        if (!prev || prev.item.kind !== 'text') return prev;
+        return { ...prev, item: { ...prev.item, fontFamily, fontSize: FONT_SIZES[thickness] } };
+      });
+    }, [fontFamily, thickness]);
+
     const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
 
     const getCtx = useCallback(() => canvasRef.current?.getContext('2d') ?? null, []);
