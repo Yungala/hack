@@ -19,14 +19,21 @@ const mockDrawing: Drawing = {
   image_url: 'https://example.com/image.png',
   x: 100,
   y: 200,
+  likes: 0,
   created_at: '2026-06-02T00:00:00Z',
+};
+
+const defaultCardProps = {
+  isRemotelyDragged: false,
+  onDragStart: vi.fn(),
+  onDragEnd: vi.fn(),
 };
 
 // AC1: 카드가 저장된 x, y 좌표에 배치됨
 describe('GalleryCard', () => {
   it('저장된 x, y 좌표로 카드가 렌더링된다', () => {
     const onClick = vi.fn();
-    const { container } = render(<GalleryCard drawing={mockDrawing} onClick={onClick} />);
+    const { container } = render(<GalleryCard drawing={mockDrawing} onClick={onClick} {...defaultCardProps} />);
     const card = container.firstChild as HTMLElement;
     expect(card.style.left).toBe('100px');
     expect(card.style.top).toBe('200px');
@@ -34,7 +41,7 @@ describe('GalleryCard', () => {
 
   it('카드 이미지가 표시된다', () => {
     const onClick = vi.fn();
-    render(<GalleryCard drawing={mockDrawing} onClick={onClick} />);
+    render(<GalleryCard drawing={mockDrawing} onClick={onClick} {...defaultCardProps} />);
     const img = screen.getByRole('img', { name: '그림 카드' });
     expect(img).toHaveAttribute('src', mockDrawing.image_url);
   });
@@ -42,7 +49,7 @@ describe('GalleryCard', () => {
   // AC12: 카드 단순 클릭 시 onClick 호출 (드래그 아님)
   it('드래그 없이 클릭하면 onClick이 호출된다', () => {
     const onClick = vi.fn();
-    const { container } = render(<GalleryCard drawing={mockDrawing} onClick={onClick} />);
+    const { container } = render(<GalleryCard drawing={mockDrawing} onClick={onClick} {...defaultCardProps} />);
     const card = container.firstChild as HTMLElement;
 
     // pointerdown → pointerup (이동 없음 = 클릭)
@@ -58,14 +65,14 @@ describe('GalleryCard', () => {
     const updatedDrawing: Drawing = { ...mockDrawing, x: 300, y: 400 };
 
     const { container, rerender } = render(
-      <GalleryCard drawing={mockDrawing} onClick={onClick} />
+      <GalleryCard drawing={mockDrawing} onClick={onClick} {...defaultCardProps} />
     );
     const card = container.firstChild as HTMLElement;
     expect(card.style.left).toBe('100px');
     expect(card.style.top).toBe('200px');
 
     // Realtime UPDATE로 drawing prop이 새 좌표로 변경됨
-    rerender(<GalleryCard drawing={updatedDrawing} onClick={onClick} />);
+    rerender(<GalleryCard drawing={updatedDrawing} onClick={onClick} {...defaultCardProps} />);
     expect(card.style.left).toBe('300px');
     expect(card.style.top).toBe('400px');
   });

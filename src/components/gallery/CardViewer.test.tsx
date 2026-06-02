@@ -8,6 +8,7 @@ const mockDrawing: Drawing = {
   image_url: 'https://example.com/image.png',
   x: 100,
   y: 200,
+  likes: 0,
   created_at: '2026-06-02T00:00:00Z',
 };
 

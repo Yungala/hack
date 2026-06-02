@@ -5,6 +5,7 @@ export const DrawingSchema = z.object({
   image_url: z.string().url(),
   x: z.number(),
   y: z.number(),
+  likes: z.number().default(0),
   created_at: z.string(),
 });
 
