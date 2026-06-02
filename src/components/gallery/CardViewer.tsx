@@ -68,10 +68,18 @@ export function CardViewer({ drawing, onClose, onLiked }: CardViewerProps) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 overflow-hidden flex flex-col md:flex-row"
+        className="relative bg-white rounded-2xl shadow-2xl border border-[#34485b]/20 overflow-hidden flex flex-col md:flex-row"
         style={{ maxWidth: 900, width: '92vw', maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
+        {/* 닫기 버튼 — 모달 우상단 고정 */}
+        <button
+          aria-label="닫기"
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-7 h-7 rounded-lg flex items-center justify-center bg-white/80 backdrop-blur-sm text-[#34485b]/60 hover:text-[#34485b] hover:bg-white transition-colors shadow-sm"
+        >
+          <X size={14} />
+        </button>
         {/* 이미지 */}
         <div className="flex-1 bg-[#f0f2f5] flex items-center justify-center min-w-0 min-h-0" style={{ minHeight: '40vw' }}>
           <img
@@ -85,15 +93,8 @@ export function CardViewer({ drawing, onClose, onLiked }: CardViewerProps) {
         {/* 사이드 패널 */}
         <div className="md:w-72 shrink-0 flex flex-col border-t md:border-t-0 md:border-l border-[#34485b]/10" style={{ maxHeight: '40vh' }}>
           {/* 헤더 */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-[#34485b]/10">
+          <div className="px-4 py-3 border-b border-[#34485b]/10">
             <span className="text-sm text-[#34485b]/60">{formatTime(drawing.created_at)}</span>
-            <button
-              aria-label="닫기"
-              onClick={onClose}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#34485b]/40 hover:text-[#34485b] hover:bg-[#34485b]/5 transition-colors"
-            >
-              <X size={14} />
-            </button>
           </div>
 
           {/* 추천 */}
