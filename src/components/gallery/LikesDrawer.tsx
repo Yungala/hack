@@ -59,7 +59,7 @@ export function LikesDrawer({ isOpen, onClose, onSelect }: LikesDrawerProps) {
           <button
             aria-label="닫기"
             onClick={onClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/5 text-[#34485b]/60 hover:text-[#34485b] hover:bg-black/10 transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/80 backdrop-blur-sm text-[#34485b]/60 hover:text-[#34485b] hover:bg-white transition-colors shadow-sm"
           >
             <X size={14} />
           </button>

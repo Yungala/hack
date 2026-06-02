@@ -24,7 +24,6 @@ const CURSOR_COLORS = ['#FF6B6B', '#4ECDC4', '#A78BFA', '#F59E0B', '#34D399', '#
 export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCountChange }: GalleryBoardProps) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
-  const [presenceCount, setPresenceCount] = useState(1);
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -34,7 +33,13 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastTrackTime = useRef(0);
   const currentDraggingId = useRef<string | null>(null);
+  const localDrawingIds = useRef<Set<string>>(new Set());
   const panStart = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
+
+  // 로컬에서 추가한 그림 ID 추적
+  useEffect(() => {
+    extraDrawings.forEach((d) => localDrawingIds.current.add(d.id));
+  }, [extraDrawings]);
 
   // 초기 로드
   useEffect(() => {
@@ -58,7 +63,7 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
           if (!result.success) return;
           setDrawings((prev) => {
             if (prev.some((d) => d.id === result.data.id)) return prev;
-            if (extraDrawings.some((d) => d.id === result.data.id)) return [...prev, result.data];
+            if (localDrawingIds.current.has(result.data.id)) return [...prev, result.data];
             toast('🎨 새 그림이 추가됐어요!', { duration: 3000 });
             const next = [...prev, result.data];
             onDrawingCountChange?.(next.length);
@@ -92,7 +97,6 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
     channel
       .on('presence', { event: 'sync' }, () => {
         const count = Object.keys(channel.presenceState()).length;
-        setPresenceCount(count);
         onPresenceChange?.(count);
       })
       .subscribe(async (status) => {
@@ -211,12 +215,6 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
       onPointerMove={handleBoardPointerMove}
       onPointerUp={handleBoardPointerUp}
     >
-      {/* 접속자 수 */}
-      <div className="fixed top-3 right-4 z-40 flex items-center gap-1.5 bg-black/50 backdrop-blur rounded-full px-3 py-1.5 text-white text-xs select-none">
-        <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
-        {presenceCount}명 접속 중
-      </div>
-
       {/* 플레이스홀더 텍스트 */}
       {merged.length === 0 && (
         <div

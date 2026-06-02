@@ -54,10 +54,10 @@ function GalleryBoardPage() {
         }}
       />
 
-      {/* 중앙 가이드 텍스트 */}
+      {/* ART GALLERY 배경 텍스트 */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 select-none">
-        <p style={{ color: 'rgba(0,0,0,0.18)', fontSize: 15, fontWeight: 400, letterSpacing: '0.01em', fontFamily: 'Pretendard, sans-serif' }}>
-          그림을 추가해서 캔버스를 꾸며주세요
+        <p style={{ color: 'rgba(0,0,0,0.06)', fontSize: 48, fontWeight: 700, letterSpacing: '0.12em', fontFamily: 'Pretendard, sans-serif' }}>
+          ART GALLERY
         </p>
       </div>
 
@@ -67,18 +67,21 @@ function GalleryBoardPage() {
         onDrawingCountChange={setDrawingCount}
       />
 
-      {/* 좋아요 버튼 (우측 상단) */}
+      {/* 인기 그림 버튼 (좌측 상단) */}
       <button
         aria-label="인기 그림 보기"
         onClick={() => setIsLikesOpen(true)}
-        className="fixed top-3 right-28 z-40 flex items-center gap-1.5 bg-black/50 backdrop-blur rounded-full px-3 py-1.5 text-white text-xs select-none hover:bg-black/70 transition-colors"
+        className="fixed top-4 left-4 z-40 flex items-center gap-1.5 bg-white rounded-full px-4 py-2 text-[#1a1a1a] text-sm font-medium select-none shadow-sm border border-black/8 hover:bg-gray-50 transition-colors"
       >
-        <Heart size={13} fill="currentColor" className="text-red-400" />
+        <Heart size={14} fill="currentColor" className="text-[#1a1a1a] opacity-50" />
         인기 그림
       </button>
 
       {/* + 그림 추가 버튼 */}
-      <div className="fixed bottom-[62px] left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed bottom-[62px] left-1/2 -translate-x-1/2 z-40 flex flex-col items-center gap-2">
+        <p className="text-xs pointer-events-none select-none" style={{ color: 'rgba(0,0,0,0.35)' }}>
+          그림을 추가해서 캔버스를 꾸며주세요
+        </p>
         <SpotlightCard
           className="!bg-black !border-transparent !p-0 !rounded-full shadow-lg"
           spotlightColor="rgba(255, 255, 255, 0.2)"

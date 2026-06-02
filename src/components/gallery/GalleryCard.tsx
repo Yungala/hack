@@ -11,12 +11,12 @@ interface GalleryCardProps {
   onClick: (drawing: Drawing) => void;
 }
 
-const CARD_W = 100;
-const CARD_H = 100;
+const CARD_MAX = 100;
 
 export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd, onClick }: GalleryCardProps) {
   const [pos, setPos] = useState({ x: drawing.x, y: drawing.y });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [size, setSize] = useState({ w: CARD_MAX, h: CARD_MAX });
   const [isCardDragging, setIsCardDragging] = useState(false);
   const dragStart = useRef<{ mouseX: number; mouseY: number; cardX: number; cardY: number } | null>(null);
   const hasDragged = useRef(false);
@@ -92,13 +92,12 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
         position: 'absolute',
         left: pos.x,
         top: pos.y,
-        width: CARD_W,
-        height: CARD_H,
+        width: size.w,
+        height: size.h,
         transform: 'translate(-50%, -50%)',
         transition: isCardDragging ? 'none' : 'left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         cursor: 'grab',
         userSelect: 'none',
-        backgroundColor: '#f4f1ea',
         outline: isRemotelyDragged ? '2.5px solid #60A5FA' : 'none',
         outlineOffset: '3px',
         borderRadius: 4,
@@ -117,7 +116,12 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
         alt="그림 카드"
         className={cn('w-full h-full object-contain pointer-events-none transition-opacity duration-300', imageLoaded ? 'opacity-100' : 'opacity-0')}
         draggable={false}
-        onLoad={() => setImageLoaded(true)}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          const ratio = img.naturalWidth / img.naturalHeight;
+          setSize({ w: Math.round(CARD_MAX * ratio), h: CARD_MAX });
+          setImageLoaded(true);
+        }}
       />
     </div>
   );

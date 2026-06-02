@@ -171,6 +171,29 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
   const itemLeft = tf.cx - tf.w / 2;
   const itemTop = tf.cy - tf.h / 2;
 
+  // 캔버스 영역 밖으로 나간 콘텐츠는 잘라서 보이게 (회전 포함)
+  // 캔버스 사각형의 꼭짓점을 콘텐츠 로컬 좌표로 역회전 변환
+  const toLocal = (px: number, py: number) => {
+    const dx = px - tf.cx;
+    const dy = py - tf.cy;
+    const rad = -tf.rot * Math.PI / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    return {
+      lx: dx * cos - dy * sin + tf.w / 2,
+      ly: dx * sin + dy * cos + tf.h / 2,
+    };
+  };
+  const clipCorners = [
+    toLocal(canvasRect.left, canvasRect.top),
+    toLocal(canvasRect.right, canvasRect.top),
+    toLocal(canvasRect.right, canvasRect.bottom),
+    toLocal(canvasRect.left, canvasRect.bottom),
+  ];
+  const contentClip: React.CSSProperties = {
+    clipPath: `polygon(${clipCorners.map((c) => `${c.lx}px ${c.ly}px`).join(', ')})`,
+  };
+
   return (
     <div className="fixed inset-0 z-30 pointer-events-none" style={{ touchAction: 'none' }}>
 
@@ -207,12 +230,13 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
           <img
             src={item.dataUrl}
             draggable={false}
-            style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block', pointerEvents: 'none' }}
+            style={{ width: '100%', height: '100%', objectFit: 'fill', display: 'block', pointerEvents: 'none', ...contentClip }}
           />
         ) : (
           <div style={{
             position: 'absolute', inset: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            ...contentClip,
           }}>
             <div style={{ display: 'grid' }}>
               <span ref={ghostRef} style={{
