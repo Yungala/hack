@@ -87,8 +87,7 @@ function redraw(
 ) {
   ctx.save();
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
   ctx.restore();
 
   // Draw all placed images first
@@ -147,8 +146,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
     useEffect(() => {
       const c = getCtx();
       if (!c) return;
-      c.fillStyle = '#ffffff';
-      c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+      c.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
     }, [getCtx]);
 
     function cssToLogical(cssX: number, cssY: number): Point {
@@ -290,8 +288,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
         imageElsRef.current.clear();
         const c = getCtx();
         if (c) {
-          c.fillStyle = '#ffffff';
-          c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+          c.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
         }
       },
       isEmpty() {
