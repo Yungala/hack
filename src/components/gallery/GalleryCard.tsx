@@ -115,7 +115,7 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
       <img
         src={drawing.image_url}
         alt="그림 카드"
-        className={cn('w-full h-full object-cover pointer-events-none transition-opacity duration-300', imageLoaded ? 'opacity-100' : 'opacity-0')}
+        className={cn('w-full h-full object-contain pointer-events-none transition-opacity duration-300', imageLoaded ? 'opacity-100' : 'opacity-0')}
         draggable={false}
         onLoad={() => setImageLoaded(true)}
       />

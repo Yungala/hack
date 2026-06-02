@@ -141,10 +141,13 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
     c.rotate(rotRad);
 
     function finalize() {
-      oc.toBlob((blob) => {
-        if (!blob) return;
-        onConfirm(new File([blob], `item-${Date.now()}.png`, { type: 'image/png' }), tf.cx, tf.cy, bboxW, bboxH);
-      }, 'image/png');
+      const dataUrl = oc.toDataURL('image/png');
+      const arr = dataUrl.split(',');
+      const bstr = atob(arr[1]);
+      const u8arr = new Uint8Array(bstr.length);
+      for (let i = 0; i < bstr.length; i++) u8arr[i] = bstr.charCodeAt(i);
+      const file = new File([u8arr], `item-${Date.now()}.png`, { type: 'image/png' });
+      onConfirm(file, tf.cx, tf.cy, bboxW, bboxH);
     }
 
     if (item.kind === 'image') {
