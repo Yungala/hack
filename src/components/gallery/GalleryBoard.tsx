@@ -71,53 +71,67 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
     };
   }, []);
 
-  // Presence 채널 — 커서 위치 + 드래그 중인 카드 공유
+  // Presence — 접속자 수 전용
   useEffect(() => {
     const channel = supabase.channel('gallery-presence', {
       config: { presence: { key: userId.current } },
     });
-
     channel
       .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState<RemoteCursor>();
-        const cursors = new Map<string, RemoteCursor>();
-        let count = 0;
-        for (const [key, presences] of Object.entries(state)) {
-          count++;
-          if (key !== userId.current) {
-            const p = presences[0] as RemoteCursor;
-            cursors.set(key, p);
-          }
-        }
-        setPresenceCount(count);
-        setRemoteCursors(new Map(cursors));
+        setPresenceCount(Object.keys(channel.presenceState()).length);
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            x: 0, y: 0,
-            color: userColor.current,
-            draggingCardId: null,
-          });
-        }
+        if (status === 'SUBSCRIBED') await channel.track({ online: true });
       });
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
+  // Broadcast — 커서 위치 실시간 공유
+  useEffect(() => {
+    const channel = supabase.channel('gallery-cursors', {
+      config: { broadcast: { self: false } },
+    });
+    channel
+      .on('broadcast', { event: 'cursor' }, ({ payload }) => {
+        const { uid, x, y, color, draggingCardId } = payload as RemoteCursor & { uid: string };
+        setRemoteCursors((prev) => {
+          const next = new Map(prev);
+          next.set(uid, { x, y, color, draggingCardId });
+          return next;
+        });
+      })
+      .on('broadcast', { event: 'leave' }, ({ payload }) => {
+        const { uid } = payload as { uid: string };
+        setRemoteCursors((prev) => { const next = new Map(prev); next.delete(uid); return next; });
+      })
+      .subscribe();
     channelRef.current = channel;
+
+    // 탭 닫힐 때 leave 브로드캐스트
+    const handleUnload = () => {
+      channel.send({ type: 'broadcast', event: 'leave', payload: { uid: userId.current } });
+    };
+    window.addEventListener('beforeunload', handleUnload);
     return () => {
+      window.removeEventListener('beforeunload', handleUnload);
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
   }, []);
 
-  function trackPresence(x: number, y: number, draggingCardId: string | null) {
+  function broadcastCursor(x: number, y: number, draggingCardId: string | null) {
     const now = Date.now();
-    if (now - lastTrackTime.current < 40) return; // 40ms 쓰로틀
+    if (now - lastTrackTime.current < 40) return;
     lastTrackTime.current = now;
-    channelRef.current?.track({ x, y, color: userColor.current, draggingCardId });
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'cursor',
+      payload: { uid: userId.current, x, y, color: userColor.current, draggingCardId },
+    });
   }
 
   function handleMouseMove(e: React.MouseEvent) {
-    trackPresence(e.clientX, e.clientY, currentDraggingId.current);
+    broadcastCursor(e.clientX, e.clientY, currentDraggingId.current);
   }
 
   function handleDragStart(cardId: string) {
@@ -126,11 +140,7 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
 
   function handleDragEnd() {
     currentDraggingId.current = null;
-    channelRef.current?.track({
-      x: 0, y: 0,
-      color: userColor.current,
-      draggingCardId: null,
-    });
+    broadcastCursor(0, 0, null);
   }
 
   const merged = useMemo(() => {
