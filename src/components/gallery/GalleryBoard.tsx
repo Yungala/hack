@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { supabase, type Drawing } from '@/lib/supabase';
 import { fetchDrawings } from '@/lib/api/drawings';
 import { DrawingSchema } from '@/lib/schemas/drawing';
@@ -52,6 +53,7 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
           if (!result.success) return;
           setDrawings((prev) => {
             if (prev.some((d) => d.id === result.data.id)) return prev;
+            toast('🎨 새 그림이 추가됐어요!', { duration: 3000 });
             return [...prev, result.data];
           });
         }
