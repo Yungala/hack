@@ -8,6 +8,8 @@ import { CardViewer } from './CardViewer';
 
 interface GalleryBoardProps {
   extraDrawings?: Drawing[];
+  onPresenceChange?: (count: number) => void;
+  onDrawingCountChange?: (count: number) => void;
 }
 
 interface RemoteCursor {
@@ -19,7 +21,7 @@ interface RemoteCursor {
 
 const CURSOR_COLORS = ['#FF6B6B', '#4ECDC4', '#A78BFA', '#F59E0B', '#34D399', '#F472B6', '#60A5FA'];
 
-export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
+export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCountChange }: GalleryBoardProps) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
   const [presenceCount, setPresenceCount] = useState(1);
@@ -37,9 +39,12 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
   // 초기 로드
   useEffect(() => {
     fetchDrawings()
-      .then((data) => setDrawings(data))
+      .then((data) => {
+        setDrawings(data);
+        onDrawingCountChange?.(data.length);
+      })
       .catch((err: unknown) => console.error('drawings 로드 실패:', err));
-  }, []);
+  }, [onDrawingCountChange]);
 
   // Realtime 구독 (drawings)
   useEffect(() => {
@@ -54,7 +59,9 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
           setDrawings((prev) => {
             if (prev.some((d) => d.id === result.data.id)) return prev;
             toast('🎨 새 그림이 추가됐어요!', { duration: 3000 });
-            return [...prev, result.data];
+            const next = [...prev, result.data];
+            onDrawingCountChange?.(next.length);
+            return next;
           });
         }
       )
@@ -83,7 +90,9 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
     });
     channel
       .on('presence', { event: 'sync' }, () => {
-        setPresenceCount(Object.keys(channel.presenceState()).length);
+        const count = Object.keys(channel.presenceState()).length;
+        setPresenceCount(count);
+        onPresenceChange?.(count);
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') await channel.track({ online: true });

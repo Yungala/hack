@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { Toaster } from 'sonner';
-import { Plus } from 'lucide-react';
+import { Plus, Heart } from 'lucide-react';
 import { GalleryBoard } from '@/components/gallery/GalleryBoard';
 import { CanvasModal } from '@/components/gallery/CanvasModal';
+import { LikesDrawer } from '@/components/gallery/LikesDrawer';
+import { CardViewer } from '@/components/gallery/CardViewer';
 import SpotlightCard from '@/components/ui/SpotlightCard';
 import type { Drawing } from '@/lib/supabase';
 
@@ -14,12 +16,17 @@ export const Route = createFileRoute('/')({
 function GalleryBoardPage() {
   const [isCanvasOpen, setIsCanvasOpen] = useState(false);
   const [extraDrawings, setExtraDrawings] = useState<Drawing[]>([]);
+  const [isLikesOpen, setIsLikesOpen] = useState(false);
+  const [viewerDrawing, setViewerDrawing] = useState<Drawing | null>(null);
+  const [presenceCount, setPresenceCount] = useState(1);
+  const [drawingCount, setDrawingCount] = useState(0);
 
   function handleDrawingAdded(drawing: Drawing) {
     setExtraDrawings((prev) => {
       if (prev.some((d) => d.id === drawing.id)) return prev;
       return [...prev, drawing];
     });
+    setDrawingCount((n) => n + 1);
   }
 
   return (
@@ -54,7 +61,21 @@ function GalleryBoardPage() {
         </p>
       </div>
 
-      <GalleryBoard extraDrawings={extraDrawings} />
+      <GalleryBoard
+        extraDrawings={extraDrawings}
+        onPresenceChange={setPresenceCount}
+        onDrawingCountChange={setDrawingCount}
+      />
+
+      {/* 좋아요 버튼 (우측 상단) */}
+      <button
+        aria-label="인기 그림 보기"
+        onClick={() => setIsLikesOpen(true)}
+        className="fixed top-3 right-28 z-40 flex items-center gap-1.5 bg-black/50 backdrop-blur rounded-full px-3 py-1.5 text-white text-xs select-none hover:bg-black/70 transition-colors"
+      >
+        <Heart size={13} fill="currentColor" className="text-red-400" />
+        인기 그림
+      </button>
 
       {/* + 그림 추가 버튼 */}
       <div className="fixed bottom-[62px] left-1/2 -translate-x-1/2 z-40">
@@ -72,6 +93,29 @@ function GalleryBoardPage() {
           </button>
         </SpotlightCard>
       </div>
+
+      {/* 통계 */}
+      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 text-xs select-none pointer-events-none"
+        style={{ color: 'rgba(0,0,0,0.35)', fontFamily: 'Pretendard, sans-serif' }}
+      >
+        <span>접속한 사람 : {presenceCount}명</span>
+        <span style={{ opacity: 0.4 }}>·</span>
+        <span>등록된 그림 : {drawingCount}개</span>
+      </div>
+
+      <LikesDrawer
+        isOpen={isLikesOpen}
+        onClose={() => setIsLikesOpen(false)}
+        onSelect={(drawing) => { setIsLikesOpen(false); setViewerDrawing(drawing); }}
+      />
+
+      {viewerDrawing && (
+        <CardViewer
+          drawing={viewerDrawing}
+          onClose={() => setViewerDrawing(null)}
+          onLiked={(newLikes) => setViewerDrawing(prev => prev ? { ...prev, likes: newLikes } : prev)}
+        />
+      )}
 
       <CanvasModal
         isOpen={isCanvasOpen}

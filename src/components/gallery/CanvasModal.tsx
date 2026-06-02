@@ -151,7 +151,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-sm">
       <div
         className="relative bg-white flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-[#34485b]/20"
         style={
@@ -190,9 +190,9 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
           <button
             aria-label="닫기"
             onClick={requestClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="w-7 h-7 rounded-lg flex items-center justify-center bg-white/80 backdrop-blur-sm text-[#34485b]/60 hover:text-[#34485b] hover:bg-white transition-colors shadow-sm"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
 
@@ -242,6 +242,11 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
           </div>
         )}
       </div>
+
+      {/* 모달 하단 경고 문구 */}
+      <p className="text-xs text-white/50 select-none pointer-events-none text-center px-4">
+        부적절한 그림이나 사진, 텍스트를 추가하면 삭제될 수 있습니다.
+      </p>
     </div>
   );
 }
