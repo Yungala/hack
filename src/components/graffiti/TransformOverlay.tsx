@@ -310,12 +310,11 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
         />
       </div>
 
-      {/* 확인 / 취소 — 텍스트는 인풋 위로, 이미지는 아래로 */}
+      {/* 확인 / 취소 */}
       <div className="fixed z-40 flex gap-3" style={{
         left: tf.cx,
-        ...(item.kind === 'text'
-          ? { top: itemTop - 16, transform: 'translate(-50%, -100%)' }
-          : { top: tf.cy + tf.h / 2 + 24, transform: 'translateX(-50%)' }),
+        top: tf.cy + tf.h / 2 + 24,
+        transform: 'translateX(-50%)',
         pointerEvents: 'auto',
       }}>
         <button

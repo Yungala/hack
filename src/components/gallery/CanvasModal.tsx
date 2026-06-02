@@ -211,7 +211,7 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
       >
         {/* 닫기 확인 다이얼로그 */}
         {showExitConfirm && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-2xl">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-2xl">
             <div className="bg-white rounded-2xl shadow-2xl px-8 py-7 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
               <p className="text-base font-semibold text-black text-center">그림을 포기할까요?</p>
               <p className="text-sm text-black/50 text-center -mt-2">지금까지 그린 내용이 모두 사라져요.</p>
