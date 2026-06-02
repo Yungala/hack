@@ -120,7 +120,19 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
       initialCY?: number;
     } | null>(null);
 
+    const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
+
     const getCtx = useCallback(() => canvasRef.current?.getContext('2d') ?? null, []);
+
+    // [ ] 키로 두께 자유 조절 (최소 1, 상한 없음)
+    useEffect(() => {
+      function handleKeyDown(e: KeyboardEvent) {
+        if (e.key === '[') useDrawingStore.setState(s => ({ thickness: Math.max(1, s.thickness - 4) }));
+        if (e.key === ']') useDrawingStore.setState(s => ({ thickness: s.thickness + 4 }));
+      }
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // Initial background
     useEffect(() => {
@@ -161,7 +173,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
 
       // brush or eraser
       const pt = cssToLogical(e.clientX, e.clientY);
-      const isEraser = tool === ('eraser' as string);
+      const isEraser = tool === 'eraser';
       currentStrokeRef.current = {
         points: [pt],
         color,
@@ -288,7 +300,16 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
       },
     }), [getCtx]);
 
-    const cursorStyle = tool === 'text' ? 'text' : 'crosshair';
+    const showCircleCursor = tool === 'brush' || tool === 'eraser';
+    const cursorStyle = showCircleCursor ? 'none' : tool === 'text' ? 'text' : 'crosshair';
+
+    // 화면상 실제 선 굵기 (logical → css px)
+    const cssThickness = (() => {
+      const rect = canvasRef.current?.getBoundingClientRect();
+      if (!rect) return thickness;
+      const scale = rect.width / LOGICAL_W;
+      return tool === 'eraser' ? thickness * 4 * scale : thickness * scale;
+    })();
 
     return (
       <>
@@ -304,9 +325,32 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
             ...style,
           }}
           onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
+          onPointerMove={(e) => {
+            handlePointerMove(e);
+            setCursorPos({ x: e.clientX, y: e.clientY });
+          }}
+          onPointerLeave={() => setCursorPos(null)}
           onPointerUp={handlePointerUp}
         />
+
+        {/* 커서 원 */}
+        {showCircleCursor && cursorPos && (
+          <div
+            style={{
+              position: 'fixed',
+              left: cursorPos.x,
+              top: cursorPos.y,
+              width: cssThickness,
+              height: cssThickness,
+              borderRadius: '50%',
+              transform: 'translate(-50%, -50%)',
+              pointerEvents: 'none',
+              border: tool === 'eraser' ? '1.5px solid #888' : `1.5px solid ${color === '#FFFFFF' ? '#aaa' : color}`,
+              background: tool === 'eraser' ? 'rgba(150,150,150,0.15)' : `${color}33`,
+              zIndex: 9999,
+            }}
+          />
+        )}
 
         {transformPending && canvasRef.current && (
           <TransformOverlay

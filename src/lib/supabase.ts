@@ -62,6 +62,7 @@ export interface Drawing {
   image_url: string;
   x: number;
   y: number;
+  likes: number;
   created_at: string;
 }
 
@@ -69,4 +70,11 @@ export interface DrawingInsert {
   image_url: string;
   x: number;
   y: number;
+}
+
+export interface Comment {
+  id: string;
+  drawing_id: string;
+  content: string;
+  created_at: string;
 }

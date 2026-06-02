@@ -245,8 +245,8 @@ export function TransformOverlay({ item, canvasRect, initialCX, initialCY, onCon
         />
       </div>
 
-      {/* 확인 / 취소 */}
-      <div className="fixed z-40 flex gap-3" style={{ bottom: 88, left: '50%', transform: 'translateX(-50%)' }}>
+      {/* 확인 / 취소 — SE 핸들 아래에 배치 */}
+      <div className="fixed z-40 flex gap-3" style={{ left: tf.cx + tf.w / 2 - 44, top: tf.cy + tf.h / 2 + 16 }}>
         <button
           onClick={onCancel}
           className="w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-colors"

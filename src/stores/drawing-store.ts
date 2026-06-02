@@ -8,9 +8,9 @@ const COLORS = [
 
 export const PALETTE = COLORS;
 export const THICKNESSES = [2, 6, 14] as const;
-export type Thickness = (typeof THICKNESSES)[number];
+export type Thickness = number;
 
-export type Tool = 'brush' | 'text';
+export type Tool = 'brush' | 'eraser' | 'text';
 
 export const FONT_FAMILIES = [
   { value: 'sans-serif',              label: '고딕',   sample: 'A' },
