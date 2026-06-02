@@ -22,7 +22,24 @@ function GalleryBoardPage() {
   }
 
   return (
-    <div className="w-screen h-screen overflow-hidden bg-white relative">
+    <div
+      className="w-screen h-screen overflow-hidden relative"
+      style={{
+        backgroundColor: '#f4f1ea',
+        backgroundImage: `
+          linear-gradient(rgba(0,0,0,0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,0,0,0.045) 1px, transparent 1px)
+        `,
+        backgroundSize: '80px 80px',
+      }}
+    >
+      {/* 중앙 가이드 텍스트 */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 select-none">
+        <p style={{ color: 'rgba(0,0,0,0.18)', fontSize: 15, fontWeight: 500, letterSpacing: '0.01em' }}>
+          그림을 추가해서 캔버스를 꾸며주세요
+        </p>
+      </div>
+
       <GalleryBoard extraDrawings={extraDrawings} />
 
       {/* + 그림 추가 버튼 */}

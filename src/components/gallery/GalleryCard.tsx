@@ -4,13 +4,16 @@ import { updateDrawingPosition } from '@/lib/api/drawings';
 
 interface GalleryCardProps {
   drawing: Drawing;
+  isRemotelyDragged: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
   onClick: (drawing: Drawing) => void;
 }
 
-const CARD_W = 200;
-const CARD_H = 200;
+const CARD_W = 100;
+const CARD_H = 100;
 
-export function GalleryCard({ drawing, onClick }: GalleryCardProps) {
+export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd, onClick }: GalleryCardProps) {
   const [pos, setPos] = useState({ x: drawing.x, y: drawing.y });
   const dragStart = useRef<{ mouseX: number; mouseY: number; cardX: number; cardY: number } | null>(null);
   const hasDragged = useRef(false);
@@ -25,6 +28,7 @@ export function GalleryCard({ drawing, onClick }: GalleryCardProps) {
   function handlePointerDown(e: React.PointerEvent) {
     e.preventDefault();
     isDragging.current = true;
+    onDragStart();
     dragStart.current = {
       mouseX: e.clientX,
       mouseY: e.clientY,
@@ -56,6 +60,7 @@ export function GalleryCard({ drawing, onClick }: GalleryCardProps) {
     dragStart.current = null;
     hasDragged.current = false;
     isDragging.current = false;
+    onDragEnd();
 
     if (wasDrag) {
       updateDrawingPosition(drawing.id, pos.x, pos.y).catch((err: unknown) => {
@@ -77,11 +82,15 @@ export function GalleryCard({ drawing, onClick }: GalleryCardProps) {
         transform: 'translate(-50%, -50%)',
         cursor: 'grab',
         userSelect: 'none',
+        backgroundColor: '#f4f1ea',
+        outline: isRemotelyDragged ? '2.5px solid #60A5FA' : 'none',
+        outlineOffset: '3px',
+        borderRadius: 4,
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
-      className="rounded-xl overflow-hidden shadow-lg border border-border bg-background hover:shadow-xl transition-shadow"
+      className="overflow-hidden"
     >
       <img
         src={drawing.image_url}
