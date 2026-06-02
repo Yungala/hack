@@ -178,7 +178,7 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden"
+      className="relative w-full h-full"
       style={{ cursor: 'grab' }}
       onPointerDown={handleBoardPointerDown}
       onPointerMove={handleBoardPointerMove}
