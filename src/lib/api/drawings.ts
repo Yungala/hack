@@ -14,11 +14,11 @@ export async function fetchDrawings(): Promise<Drawing[]> {
 
 export async function insertDrawing(insert: DrawingInsert): Promise<Drawing> {
   DrawingInsertSchema.parse(insert);
-  const { data, error } = await supabase
-    .from('drawings')
-    .insert(insert)
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc('insert_drawing', {
+    p_image_url: insert.image_url,
+    p_x: insert.x,
+    p_y: insert.y,
+  });
   if (error) throw new Error(error.message);
   return DrawingSchema.parse(data);
 }
