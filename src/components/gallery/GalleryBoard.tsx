@@ -24,6 +24,7 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
   const [presenceCount, setPresenceCount] = useState(1);
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
 
   const userId = useRef(crypto.randomUUID());
   const userColor = useRef(CURSOR_COLORS[Math.floor(Math.random() * CURSOR_COLORS.length)]);
@@ -141,24 +142,38 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
     broadcastCursor(0, 0, null);
   }
 
+  const PAN_LIMIT = 100;
+
+  function rubberBand(value: number, limit: number) {
+    if (Math.abs(value) <= limit) return value;
+    const excess = Math.abs(value) - limit;
+    const sign = value > 0 ? 1 : -1;
+    return sign * (limit + excess * 0.3);
+  }
+
   function handleBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if ((e.target as HTMLElement).closest('[data-card]')) return;
     if ((e.target as HTMLElement).closest('[data-modal]')) return;
     e.currentTarget.setPointerCapture(e.pointerId);
+    setIsPanning(true);
     panStart.current = { px: e.clientX, py: e.clientY, ox: pan.x, oy: pan.y };
   }
 
   function handleBoardPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     broadcastCursor(e.clientX, e.clientY, currentDraggingId.current);
     if (!panStart.current) return;
-    setPan({
-      x: panStart.current.ox + (e.clientX - panStart.current.px),
-      y: panStart.current.oy + (e.clientY - panStart.current.py),
-    });
+    const nx = panStart.current.ox + (e.clientX - panStart.current.px);
+    const ny = panStart.current.oy + (e.clientY - panStart.current.py);
+    setPan({ x: rubberBand(nx, PAN_LIMIT), y: rubberBand(ny, PAN_LIMIT) });
   }
 
   function handleBoardPointerUp() {
     panStart.current = null;
+    setIsPanning(false);
+    setPan((prev) => ({
+      x: Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, prev.x)),
+      y: Math.max(-PAN_LIMIT, Math.min(PAN_LIMIT, prev.y)),
+    }));
   }
 
   const merged = useMemo(() => {
@@ -205,7 +220,10 @@ export function GalleryBoard({ extraDrawings = [] }: GalleryBoardProps) {
       {/* pan 레이어: 카드 + 커서 */}
       <div
         className="absolute inset-0"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px)`,
+          transition: isPanning ? 'none' : 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        }}
       >
         {/* 카드 자유 배치 */}
         {merged.map((drawing) => (

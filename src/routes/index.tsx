@@ -34,9 +34,22 @@ function GalleryBoardPage() {
         backgroundSize: '80px 80px',
       }}
     >
+      {/* 가장자리 그라디언트 */}
+      <div
+        className="fixed inset-0 pointer-events-none z-10"
+        style={{
+          background: `
+            linear-gradient(to right, rgba(210,205,195,0.55) 0%, transparent 7%),
+            linear-gradient(to left,  rgba(210,205,195,0.55) 0%, transparent 7%),
+            linear-gradient(to bottom, rgba(210,205,195,0.55) 0%, transparent 7%),
+            linear-gradient(to top,   rgba(210,205,195,0.55) 0%, transparent 7%)
+          `,
+        }}
+      />
+
       {/* 중앙 가이드 텍스트 */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 select-none">
-        <p style={{ color: 'rgba(0,0,0,0.18)', fontSize: 15, fontWeight: 500, letterSpacing: '0.01em' }}>
+        <p style={{ color: 'rgba(0,0,0,0.18)', fontSize: 15, fontWeight: 400, letterSpacing: '0.01em', fontFamily: 'Pretendard, sans-serif' }}>
           그림을 추가해서 캔버스를 꾸며주세요
         </p>
       </div>
@@ -44,19 +57,21 @@ function GalleryBoardPage() {
       <GalleryBoard extraDrawings={extraDrawings} />
 
       {/* + 그림 추가 버튼 */}
-      <SpotlightCard
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 !bg-primary !border-transparent !p-0 !rounded-full shadow-lg w-fit"
-        spotlightColor="rgba(255, 255, 255, 0.2)"
-      >
-        <button
-          aria-label="그림 추가"
-          onClick={() => setIsCanvasOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-primary-foreground font-medium"
+      <div className="fixed bottom-[62px] left-1/2 -translate-x-1/2 z-40">
+        <SpotlightCard
+          className="!bg-black !border-transparent !p-0 !rounded-full shadow-lg"
+          spotlightColor="rgba(255, 255, 255, 0.2)"
         >
-          <Plus size={16} />
-          그림 추가
-        </button>
-      </SpotlightCard>
+          <button
+            aria-label="그림 추가"
+            onClick={() => setIsCanvasOpen(true)}
+            className="flex items-center gap-2 px-6 py-3 rounded-full text-white font-medium text-base transition-all duration-200 hover:scale-105 active:scale-95"
+          >
+            <Plus size={19} />
+            그림 추가
+          </button>
+        </SpotlightCard>
+      </div>
 
       <CanvasModal
         isOpen={isCanvasOpen}

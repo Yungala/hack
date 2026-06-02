@@ -75,56 +75,56 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
       <div className="relative flex items-center justify-center w-full">
         {/* 붓 옵션 패널 */}
         {showBrushPanel && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-[#34485b] px-3 py-2 shadow-xl z-10 whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-white rounded-2xl border border-black/8 px-4 py-3 shadow-xl z-10 whitespace-nowrap">
+            <div className="flex items-center gap-2">
               {PALETTE.map((c) => (
                 <button
                   key={c}
                   aria-label={COLOR_NAMES[c]}
                   onClick={() => setColor(c)}
-                  className="w-5 h-5 border border-[#34485b]/30 transition-transform hover:scale-110"
-                  style={{ backgroundColor: c, outline: color === c ? '2px solid #34485b' : 'none', outlineOffset: '1px' }}
+                  className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                  style={{ backgroundColor: c, outline: color === c ? '2.5px solid #111' : '1px solid rgba(0,0,0,0.12)', outlineOffset: '2px' }}
                 />
               ))}
             </div>
             <HexInput color={color} setColor={setColor} />
-            <p className="text-black/30 font-mono text-xs mt-1">[ ] 키로 크기 조절</p>
+            <p className="text-black/30 text-xs mt-1.5">[ ] 키로 크기 조절</p>
           </div>
         )}
 
         {/* 텍스트 옵션 패널 */}
         {showTextPanel && (
-          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-white border border-[#34485b] px-3 py-2 shadow-xl z-10 whitespace-nowrap">
-            <div className="flex items-center gap-1.5">
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-white rounded-2xl border border-black/8 px-4 py-3 shadow-xl z-10 whitespace-nowrap">
+            <div className="flex items-center gap-2">
               {PALETTE.map((c) => (
                 <button
                   key={c}
                   aria-label={COLOR_NAMES[c]}
                   onClick={() => setColor(c)}
-                  className="w-5 h-5 border border-[#34485b]/30 transition-transform hover:scale-110"
-                  style={{ backgroundColor: c, outline: color === c ? '2px solid #34485b' : 'none', outlineOffset: '1px' }}
+                  className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                  style={{ backgroundColor: c, outline: color === c ? '2.5px solid #111' : '1px solid rgba(0,0,0,0.12)', outlineOffset: '2px' }}
                 />
               ))}
             </div>
             <HexInput color={color} setColor={setColor} />
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1 mt-2.5">
               {FONT_FAMILIES.map((f) => (
                 <button
                   key={f.value}
                   aria-label={f.label}
                   title={f.label}
                   onClick={() => setFontFamily(f.value)}
-                  className={`w-8 h-7 text-sm transition-colors ${fontFamily === f.value ? 'bg-[#34485b] text-white' : 'text-[#34485b] hover:bg-[#34485b]/10'}`}
+                  className={`w-8 h-7 rounded-lg text-sm transition-colors ${fontFamily === f.value ? 'bg-black text-white' : 'text-black/60 hover:bg-black/8'}`}
                   style={{ fontFamily: f.value }}
                 >A</button>
               ))}
-              <div className="w-px h-5 bg-[#34485b]/20 mx-1" />
+              <div className="w-px h-5 bg-black/10 mx-1" />
               {THICKNESSES.map((t) => (
                 <button
                   key={t}
                   aria-label={SIZE_LABELS[t]}
                   onClick={() => setThickness(t)}
-                  className={`w-8 h-7 text-xs font-bold transition-colors ${thickness === t ? 'bg-[#34485b] text-white' : 'text-[#34485b] hover:bg-[#34485b]/10'}`}
+                  className={`w-8 h-7 rounded-lg text-xs font-bold transition-colors ${thickness === t ? 'bg-black text-white' : 'text-black/60 hover:bg-black/8'}`}
                 >{SIZE_LABELS[t]}</button>
               ))}
             </div>
@@ -132,7 +132,7 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
         )}
 
         {/* 메인 툴바 */}
-        <div className="flex items-center gap-3 bg-white border border-[#34485b] px-4 py-2">
+        <div className="flex items-center gap-1 bg-white rounded-full px-3 py-2 shadow-md border border-black/8">
           {/* 붓 */}
           <button
             aria-label="붓"
@@ -141,21 +141,21 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
               if (tool === 'brush') { if (panelVisible) { clearTool(); setPanelVisible(false); } else { setPanelVisible(true); } }
               else { setTool('brush'); setPanelVisible(true); }
             }}
-            className={`w-8 h-8 border flex items-center justify-center transition-colors ${tool === 'brush' && panelVisible ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${tool === 'brush' && panelVisible ? 'bg-black/10 text-black' : 'text-black/40 hover:text-black hover:bg-black/6'}`}
           >
-            <Pencil size={16} />
+            <Pencil size={15} />
           </button>
-          <div className="w-px h-5 bg-[#34485b]/20" />
+          <div className="w-px h-4 bg-black/10 mx-1" />
           {/* 지우개 */}
           <button
             aria-label="지우개"
             title="지우개"
             onClick={() => { if (tool === 'eraser') { clearTool(); } else { setTool('eraser'); } setPanelVisible(false); }}
-            className={`w-8 h-8 border flex items-center justify-center transition-colors ${tool === 'eraser' ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${tool === 'eraser' ? 'bg-black/10 text-black' : 'text-black/40 hover:text-black hover:bg-black/6'}`}
           >
-            <Eraser size={16} />
+            <Eraser size={15} />
           </button>
-          <div className="w-px h-5 bg-[#34485b]/20" />
+          <div className="w-px h-4 bg-black/10 mx-1" />
           {/* 텍스트 */}
           <button
             aria-label="텍스트"
@@ -164,19 +164,19 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
               if (tool === 'text') { if (panelVisible) { clearTool(); setPanelVisible(false); } else { setPanelVisible(true); } }
               else { setTool('text'); setPanelVisible(true); }
             }}
-            className={`w-8 h-8 border flex items-center justify-center transition-colors ${tool === 'text' && panelVisible ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${tool === 'text' && panelVisible ? 'bg-black/10 text-black' : 'text-black/40 hover:text-black hover:bg-black/6'}`}
           >
-            <Type size={16} />
+            <Type size={15} />
           </button>
-          <div className="w-px h-5 bg-[#34485b]/20" />
+          <div className="w-px h-4 bg-black/10 mx-1" />
           {/* 이미지 */}
           <button
             aria-label="사진 업로드"
             title="사진 업로드"
             onClick={() => fileInputRef.current?.click()}
-            className={`w-8 h-8 border flex items-center justify-center transition-colors ${isUploadMode ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}
+            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isUploadMode ? 'bg-black/10 text-black' : 'text-black/40 hover:text-black hover:bg-black/6'}`}
           >
-            <ImageIcon size={16} />
+            <ImageIcon size={15} />
           </button>
           <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleFileChange} />
         </div>

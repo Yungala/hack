@@ -17,9 +17,17 @@ const CARD_H = 100;
 export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd, onClick }: GalleryCardProps) {
   const [pos, setPos] = useState({ x: drawing.x, y: drawing.y });
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isCardDragging, setIsCardDragging] = useState(false);
   const dragStart = useRef<{ mouseX: number; mouseY: number; cardX: number; cardY: number } | null>(null);
   const hasDragged = useRef(false);
   const isDragging = useRef(false);
+
+  const PAN_LIMIT = 100;
+  const CARD_INSET = 100;
+  const minX = -PAN_LIMIT + CARD_INSET;
+  const minY = -PAN_LIMIT + CARD_INSET;
+  function maxX() { return window.innerWidth + PAN_LIMIT - CARD_INSET; }
+  function maxY() { return window.innerHeight + PAN_LIMIT - CARD_INSET; }
 
   useEffect(() => {
     if (!isDragging.current) {
@@ -30,6 +38,7 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
   function handlePointerDown(e: React.PointerEvent) {
     e.preventDefault();
     isDragging.current = true;
+    setIsCardDragging(true);
     onDragStart();
     dragStart.current = {
       mouseX: e.clientX,
@@ -62,10 +71,14 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
     dragStart.current = null;
     hasDragged.current = false;
     isDragging.current = false;
+    setIsCardDragging(false);
     onDragEnd();
 
     if (wasDrag) {
-      updateDrawingPosition(drawing.id, pos.x, pos.y).catch((err: unknown) => {
+      const clampedX = Math.max(minX, Math.min(maxX(), pos.x));
+      const clampedY = Math.max(minY, Math.min(maxY(), pos.y));
+      setPos({ x: clampedX, y: clampedY });
+      updateDrawingPosition(drawing.id, clampedX, clampedY).catch((err: unknown) => {
         console.error('위치 저장 실패:', err);
       });
     } else {
@@ -82,6 +95,7 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
         width: CARD_W,
         height: CARD_H,
         transform: 'translate(-50%, -50%)',
+        transition: isCardDragging ? 'none' : 'left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         cursor: 'grab',
         userSelect: 'none',
         backgroundColor: '#f4f1ea',

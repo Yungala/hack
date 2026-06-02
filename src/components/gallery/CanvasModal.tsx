@@ -22,21 +22,31 @@ type EvalState =
 export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProps) {
   const canvasRef = useRef<LocalCanvasHandle>(null);
   const [evalState, setEvalState] = useState<EvalState>({ status: 'idle' });
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const handleClose = useCallback(() => {
     canvasRef.current?.clear();
     setEvalState({ status: 'idle' });
+    setShowExitConfirm(false);
     onClose();
   }, [onClose]);
+
+  const requestClose = useCallback(() => {
+    if (canvasRef.current?.isEmpty() === false) {
+      setShowExitConfirm(true);
+    } else {
+      handleClose();
+    }
+  }, [handleClose]);
 
   useEffect(() => {
     if (!isOpen) return;
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') handleClose();
+      if (e.key === 'Escape') requestClose();
     }
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleClose]);
+  }, [isOpen, requestClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -143,19 +153,43 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div
-        className="bg-white flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-[#34485b]/20"
+        className="relative bg-white flex flex-col overflow-hidden rounded-2xl shadow-2xl border border-[#34485b]/20"
         style={
           isMobile
             ? { width: 'calc(100vw - 32px)' }
             : { maxWidth: 960, width: '88vw', maxHeight: '85vh' }
         }
       >
+        {/* 닫기 확인 다이얼로그 */}
+        {showExitConfirm && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/40 backdrop-blur-sm rounded-2xl">
+            <div className="bg-white rounded-2xl shadow-2xl px-8 py-7 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+              <p className="text-base font-semibold text-black text-center">그림을 포기할까요?</p>
+              <p className="text-sm text-black/50 text-center -mt-2">지금까지 그린 내용이 모두 사라져요.</p>
+              <div className="flex gap-2 w-full mt-1">
+                <button
+                  onClick={() => setShowExitConfirm(false)}
+                  className="flex-1 py-2.5 rounded-full border border-black/10 text-sm font-medium text-black hover:bg-black/5 transition-colors"
+                >
+                  계속 그리기
+                </button>
+                <button
+                  onClick={handleClose}
+                  className="flex-1 py-2.5 rounded-full bg-black text-white text-sm font-medium hover:bg-black/80 transition-colors"
+                >
+                  포기하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#34485b]/20 shrink-0">
           <span className="font-medium text-[#34485b]">그림 그리기</span>
           <button
             aria-label="닫기"
-            onClick={handleClose}
+            onClick={requestClose}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
           >
             <X size={16} />

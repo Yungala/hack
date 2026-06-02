@@ -40,6 +40,7 @@ export interface LocalCanvasHandle {
   getBlob: () => Promise<Blob>;
   clear: () => void;
   handleImageFile: (file: File) => void;
+  isEmpty: () => boolean;
 }
 
 export interface LocalCanvasProps {
@@ -284,6 +285,9 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
           c.fillStyle = '#ffffff';
           c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
         }
+      },
+      isEmpty() {
+        return strokesRef.current.length === 0 && imagesRef.current.length === 0;
       },
       handleImageFile(file: File) {
         const reader = new FileReader();
