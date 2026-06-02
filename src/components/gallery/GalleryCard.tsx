@@ -96,7 +96,7 @@ export function GalleryCard({ drawing, isRemotelyDragged, onDragStart, onDragEnd
       className="overflow-hidden"
     >
       {!imageLoaded && (
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse opacity-50" />
       )}
       <img
         src={drawing.image_url}

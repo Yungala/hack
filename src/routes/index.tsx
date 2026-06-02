@@ -45,7 +45,7 @@ function GalleryBoardPage() {
 
       {/* + 그림 추가 버튼 */}
       <SpotlightCard
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 !bg-primary !border-primary/20 !p-0 !rounded-full shadow-lg"
+        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 !bg-primary !border-transparent !p-0 !rounded-full shadow-lg w-fit"
         spotlightColor="rgba(255, 255, 255, 0.2)"
       >
         <button
