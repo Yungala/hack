@@ -87,7 +87,8 @@ function redraw(
 ) {
   ctx.save();
   ctx.globalCompositeOperation = 'source-over';
-  ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
   ctx.restore();
 
   // Draw all placed images first
@@ -146,7 +147,8 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
     useEffect(() => {
       const c = getCtx();
       if (!c) return;
-      c.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+      c.fillStyle = '#ffffff';
+      c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     }, [getCtx]);
 
     function cssToLogical(cssX: number, cssY: number): Point {
@@ -280,13 +282,14 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
           const ctx = canvas.getContext('2d');
           if (!ctx) { reject(new Error('컨텍스트 없음')); return; }
 
-          // 실제 그려진 픽셀의 bounding box 계산
+          // 흰색(255,255,255)이 아닌 픽셀의 bounding box 계산
           const imageData = ctx.getImageData(0, 0, LOGICAL_W, LOGICAL_H);
           const d = imageData.data;
           let minX = LOGICAL_W, minY = LOGICAL_H, maxX = 0, maxY = 0;
           for (let y = 0; y < LOGICAL_H; y++) {
             for (let x = 0; x < LOGICAL_W; x++) {
-              if (d[(y * LOGICAL_W + x) * 4 + 3] > 0) {
+              const i = (y * LOGICAL_W + x) * 4;
+              if (d[i] !== 255 || d[i + 1] !== 255 || d[i + 2] !== 255) {
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
                 if (y < minY) minY = y;
@@ -304,12 +307,11 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
             return;
           }
 
-          // 여백 추가 후 크롭
-          const PAD = 24;
-          const cropX = Math.max(0, minX - PAD);
-          const cropY = Math.max(0, minY - PAD);
-          const cropW = Math.min(LOGICAL_W, maxX + PAD) - cropX;
-          const cropH = Math.min(LOGICAL_H, maxY + PAD) - cropY;
+          // 그린 영역만 크롭
+          const cropX = minX;
+          const cropY = minY;
+          const cropW = maxX - minX;
+          const cropH = maxY - minY;
 
           const cropped = document.createElement('canvas');
           cropped.width = cropW;
@@ -328,7 +330,8 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
         imageElsRef.current.clear();
         const c = getCtx();
         if (c) {
-          c.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+          c.fillStyle = '#ffffff';
+          c.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
         }
       },
       isEmpty() {
