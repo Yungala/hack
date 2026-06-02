@@ -5,7 +5,7 @@ import { uploadDrawingImage, insertDrawing } from '@/lib/api/drawings';
 import type { Drawing } from '@/lib/supabase';
 import { LocalCanvas, type LocalCanvasHandle } from './LocalCanvas';
 import { DrawingToolbar } from '@/components/graffiti/DrawingToolbar';
-import { supabase } from '@/lib/supabase';
+import { env } from '@/env';
 
 interface CanvasModalProps {
   isOpen: boolean;
@@ -59,16 +59,15 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
       for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
       const imageBase64 = btoa(binary);
 
-      // AI 평가 (실패 시 기본 승인으로 fallback)
-      let evalResult: { approved: boolean; comment: string } = { approved: true, comment: '갤러리에 추가됐어요!' };
-      try {
-        const { data, error } = await supabase.functions.invoke('evaluate-drawing', {
-          body: { imageBase64, mediaType: 'image/png' },
-        });
-        if (!error && data) evalResult = data as { approved: boolean; comment: string };
-      } catch {
-        // Edge Function 호출 실패 시 평가 생략
-      }
+      // AI 평가
+      const fnUrl = `${env.VITE_SUPABASE_URL}/functions/v1/evaluate-drawing`;
+      const evalRes = await fetch(fnUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64, mediaType: 'image/png' }),
+      });
+      if (!evalRes.ok) throw new Error(`평가 서비스 오류 (${evalRes.status})`);
+      const evalResult = await evalRes.json() as { approved: boolean; comment: string };
 
       if (!evalResult.approved) {
         setEvalState({ status: 'rejected', comment: evalResult.comment });
