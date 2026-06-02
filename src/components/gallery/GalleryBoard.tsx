@@ -58,6 +58,7 @@ export function GalleryBoard({ extraDrawings = [], onPresenceChange, onDrawingCo
           if (!result.success) return;
           setDrawings((prev) => {
             if (prev.some((d) => d.id === result.data.id)) return prev;
+            if (extraDrawings.some((d) => d.id === result.data.id)) return [...prev, result.data];
             toast('🎨 새 그림이 추가됐어요!', { duration: 3000 });
             const next = [...prev, result.data];
             onDrawingCountChange?.(next.length);

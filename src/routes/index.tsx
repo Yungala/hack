@@ -95,8 +95,8 @@ function GalleryBoardPage() {
       </div>
 
       {/* 통계 */}
-      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 text-xs select-none pointer-events-none"
-        style={{ color: 'rgba(0,0,0,0.35)', fontFamily: 'Pretendard, sans-serif' }}
+      <div className="fixed bottom-[26px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 text-sm select-none pointer-events-none"
+        style={{ color: 'rgba(0,0,0,0.55)', fontFamily: 'Pretendard, sans-serif' }}
       >
         <span>접속한 사람 : {presenceCount}명</span>
         <span style={{ opacity: 0.4 }}>·</span>

@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const client = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY') });
 
     const message = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-haiku-4-5',
       max_tokens: 256,
       messages: [
         {
@@ -34,10 +34,14 @@ Deno.serve(async (req) => {
               text: `이 그림을 보고 JSON으로만 응답해줘. 다른 텍스트 없이 JSON만.
 
 규칙:
-- 선정적, 고어, 혐오, 욕설이 포함되면 approved: false
+- 다음 중 하나라도 해당하면 approved: false
+  1. 선정적이거나 성적인 이미지
+  2. 고어, 폭력적 장면
+  3. 혐오 표현 (특정 집단 비하)
+  4. 욕설 텍스트 — 한국어 포함: 씨발, 개새끼, 병신, 지랄, 미친, fuck, shit 등 비슷한 표현 모두 해당
 - 그 외 모두 approved: true
-- comment는 한국어로 친근하게. 뭘 그렸는지 추측하며 짧게 (20자 이내).
-  예시: "강아지를 그리셨군요! 귀엽네요 🐶"
+- comment는 한국어로 친근하게. 뭘 그렸는지 추측하며 짧게 (40자 이내).
+  예시: "강아지를 그리셨군요! 정말 귀엽고 사랑스러운 그림이에요 🐶"
 - 반려 시 comment: "이 그림은 게시할 수 없어요."
 
 {"approved": true/false, "comment": "..."}`,
