@@ -48,7 +48,7 @@ interface DrawingToolbarProps {
 }
 
 export function DrawingToolbar({ onImageSelected, variant = 'floating' }: DrawingToolbarProps) {
-  const { tool, color, thickness, fontFamily, isUploadMode, setTool, setColor, setThickness, setFontFamily } = useDrawingStore();
+  const { tool, color, thickness, fontFamily, isUploadMode, setTool, clearTool, setColor, setThickness, setFontFamily } = useDrawingStore();
   const isModal = variant === 'modal';
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDrawModalOpen, setIsDrawModalOpen] = useState(false);
@@ -138,7 +138,7 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
             aria-label="붓"
             title="붓"
             onClick={() => {
-              if (tool === 'brush') { setPanelVisible(v => !v); }
+              if (tool === 'brush') { if (panelVisible) { clearTool(); setPanelVisible(false); } else { setPanelVisible(true); } }
               else { setTool('brush'); setPanelVisible(true); }
             }}
             className={`w-8 h-8 border flex items-center justify-center transition-colors ${tool === 'brush' && panelVisible ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}
@@ -150,7 +150,7 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
           <button
             aria-label="지우개"
             title="지우개"
-            onClick={() => { setTool(tool === 'eraser' ? 'brush' : 'eraser'); setPanelVisible(false); }}
+            onClick={() => { if (tool === 'eraser') { clearTool(); } else { setTool('eraser'); } setPanelVisible(false); }}
             className={`w-8 h-8 border flex items-center justify-center transition-colors ${tool === 'eraser' ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}
           >
             <Eraser size={16} />
@@ -161,7 +161,7 @@ export function DrawingToolbar({ onImageSelected, variant = 'floating' }: Drawin
             aria-label="텍스트"
             title="텍스트"
             onClick={() => {
-              if (tool === 'text') { setPanelVisible(v => !v); }
+              if (tool === 'text') { if (panelVisible) { clearTool(); setPanelVisible(false); } else { setPanelVisible(true); } }
               else { setTool('text'); setPanelVisible(true); }
             }}
             className={`w-8 h-8 border flex items-center justify-center transition-colors ${tool === 'text' && panelVisible ? 'bg-[#34485b] text-white border-[#34485b]' : 'text-[#34485b] border-transparent hover:border-[#34485b]/40'}`}

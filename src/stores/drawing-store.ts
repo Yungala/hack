@@ -10,7 +10,7 @@ export const PALETTE = COLORS;
 export const THICKNESSES = [2, 6, 14] as const;
 export type Thickness = number;
 
-export type Tool = 'brush' | 'eraser' | 'text';
+export type Tool = 'brush' | 'eraser' | 'text' | null;
 
 export const FONT_FAMILIES = [
   { value: 'sans-serif',              label: '고딕',   sample: 'A' },
@@ -32,6 +32,7 @@ interface DrawingStore {
   setColor: (color: string) => void;
   setThickness: (thickness: Thickness) => void;
   setTool: (tool: Tool) => void;
+  clearTool: () => void;
   setFontFamily: (f: FontFamily) => void;
   setConnected: (connected: boolean) => void;
   setPresenceCount: (count: number) => void;
@@ -42,7 +43,7 @@ interface DrawingStore {
 export const useDrawingStore = create<DrawingStore>((set) => ({
   color: '#111111',
   thickness: 6,
-  tool: 'brush',
+  tool: null,
   fontFamily: 'sans-serif',
   isConnected: true,
   presenceCount: 1,
@@ -51,6 +52,7 @@ export const useDrawingStore = create<DrawingStore>((set) => ({
   setColor: (color) => set({ color }),
   setThickness: (thickness) => set({ thickness }),
   setTool: (tool) => set({ tool }),
+  clearTool: () => set({ tool: null }),
   setFontFamily: (fontFamily) => set({ fontFamily }),
   setConnected: (isConnected) => set({ isConnected }),
   setPresenceCount: (presenceCount) => set({ presenceCount }),

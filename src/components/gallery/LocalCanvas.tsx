@@ -302,7 +302,7 @@ export const LocalCanvas = forwardRef<LocalCanvasHandle, LocalCanvasProps>(
     }), [getCtx]);
 
     const showCircleCursor = tool === 'brush' || tool === 'eraser';
-    const cursorStyle = showCircleCursor ? 'none' : tool === 'text' ? 'text' : 'crosshair';
+    const cursorStyle = showCircleCursor ? 'none' : tool === 'text' ? 'text' : tool === null ? 'default' : 'crosshair';
 
     // 화면상 실제 선 굵기 (logical → css px)
     const cssThickness = (() => {
