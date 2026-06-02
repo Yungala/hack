@@ -153,6 +153,35 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isSubmitting = evalState.status === 'evaluating';
 
+  const backgroundToggle = (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={includeBackground}
+      onClick={() => setIncludeBackground((v) => !v)}
+      className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors"
+    >
+      <span
+        className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
+          includeBackground ? 'bg-[#34485b] border-[#34485b]' : 'bg-white border-[#34485b]/40'
+        }`}
+      >
+        {includeBackground && <Check size={12} className="text-white" strokeWidth={3} />}
+      </span>
+      배경 포함
+    </button>
+  );
+
+  const confirmButton = (
+    <button
+      onClick={handleConfirm}
+      disabled={isSubmitting}
+      className="flex items-center gap-1.5 h-[40px] px-5 rounded-lg bg-black text-white font-medium text-sm hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      완료
+    </button>
+  );
+
   if (evalState.status === 'approved') {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -257,35 +286,27 @@ export function CanvasModal({ isOpen, onClose, onDrawingAdded }: CanvasModalProp
         </div>
 
         {/* 푸터 */}
-        <div className="shrink-0 relative flex items-center justify-center px-5 py-3 border-t border-[#34485b]/20">
-          <button
-            type="button"
-            role="checkbox"
-            aria-checked={includeBackground}
-            onClick={() => setIncludeBackground((v) => !v)}
-            className="absolute left-5 z-10 flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap text-sm text-[#34485b]/70 hover:text-[#34485b] transition-colors"
-          >
-            <span
-              className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${
-                includeBackground ? 'bg-[#34485b] border-[#34485b]' : 'bg-white border-[#34485b]/40'
-              }`}
-            >
-              {includeBackground && <Check size={12} className="text-white" strokeWidth={3} />}
-            </span>
-            배경 포함
-          </button>
-          <DrawingToolbar
-            variant="modal"
-            onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}
-          />
-          <button
-            onClick={handleConfirm}
-            disabled={isSubmitting}
-            className="absolute right-5 z-10 flex items-center gap-1.5 h-[40px] px-5 rounded-lg bg-black text-white font-medium text-sm hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            완료
-          </button>
-        </div>
+        {isMobile ? (
+          <div className="shrink-0 flex flex-col items-center gap-3 px-5 py-3 border-t border-[#34485b]/20">
+            <DrawingToolbar
+              variant="modal"
+              onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}
+            />
+            <div className="flex items-center justify-between w-full">
+              {backgroundToggle}
+              {confirmButton}
+            </div>
+          </div>
+        ) : (
+          <div className="shrink-0 relative flex items-center justify-center px-5 py-3 border-t border-[#34485b]/20">
+            <div className="absolute left-5 z-10">{backgroundToggle}</div>
+            <DrawingToolbar
+              variant="modal"
+              onImageSelected={(file) => canvasRef.current?.handleImageFile(file)}
+            />
+            <div className="absolute right-5 z-10">{confirmButton}</div>
+          </div>
+        )}
       </div>
 
       {/* 모달 하단 경고 문구 */}
